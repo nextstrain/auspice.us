@@ -1,0 +1,5 @@
+{
+  "splashComponent": "splash.js",
+  "navbarComponent": "navbar.js",
+  "browserTitle": "auspice.us"
+}
