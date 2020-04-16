@@ -1,6 +1,6 @@
 const getNarrative = require("./serverGetNarrative").default;
 const getDataset = require("./serverGetDataset").default;
-const utils = require("../cli/utils");
+const utils = require("../node_modules/auspice/cli/utils.js"); // not great
 
 const getAvailable = (req, res) => {
   res.statusMessage = `Auspice.us currently doesn't have a listing of available datasets.`;

@@ -7,17 +7,21 @@ It is currently available at [auspice-us-dev.herokuapp.com](http://auspice-us-de
 
 ## How to build
 
-Currently located as a subfolder of auspice — however this could be broken out into its own repo if needed. 
-All commands run from the "auspice" directory.
 
 ```bash
-# DEVELOPMENT
-node auspice.js develop --verbose --extend ./auspice.us/config.json --handlers ./auspice.us/server.js 
-
-# PRODUCTION
-node auspice.js build --verbose --extend ./auspice.us/config.json
-node auspice.js view --verbose --handlers ./auspice.us/server.js
+conda activate auspice.us
+npm install
+npx auspice build --verbose --extend ./auspice_client_customisation/config.json
+npx auspice view --verbose --handlers ./server/server.js
 ```
+
+
+```bash
+npx auspice develop --verbose --extend ./auspice_client_customisation/config.json --handlers ./server/server.js
+```
+
+
+
 
 ## Deploy:
 ```bash

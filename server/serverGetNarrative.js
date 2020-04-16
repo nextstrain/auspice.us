@@ -1,4 +1,4 @@
-const utils = require("../cli/utils");
+const utils = require("../node_modules/auspice/cli/utils.js"); // not great
 
 const getNarrative = (req, res) => {
   res.statusMessage = `Auspice.us currently doesn't serve narratives.`;

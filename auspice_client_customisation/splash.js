@@ -1,4 +1,4 @@
-import React from "@libraries/react"; // eslint-disable-line
+import React from "react"; // eslint-disable-line
 import { CenterContent } from "@auspice/components/splash/centerContent"; // eslint-disable-line
 import { handleDroppedFiles } from "./handleDroppedFiles";
 

@@ -1,5 +1,5 @@
-import React from "@libraries/react";
-import styled from '@libraries/styled-components';
+import React from "react";
+import styled from 'styled-components';
 
 const NavBarContainer = styled.div`
   display: flex;

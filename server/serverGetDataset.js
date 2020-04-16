@@ -1,5 +1,5 @@
 const queryString = require("query-string");
-const utils = require("../cli/utils");
+const utils = require("../node_modules/auspice/cli/utils.js"); // not great
 
 const error = (res, clientMsg, serverMsg="") => {
   res.statusMessage = clientMsg;
