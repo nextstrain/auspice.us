@@ -35,7 +35,6 @@ class SplashContent extends React.Component {
         <div style={p}>
           {`auspice.us allows interactive exploration of phylogenomic datasets and is targetted at academic use.
           Simply drag and drop your datasets on to visualise them.
-          Alternatively, datasets may be sourced from your own github repo, instructions here.
           `}
         </div>
         <div style={p}>
@@ -50,10 +49,6 @@ class SplashContent extends React.Component {
         <CenterContent>
           <div>
             <h2>{`Drag & Drop your JSONs on here to view them`}</h2>
-            <h2>Github sourced Examples:</h2>
-            <ul>
-              <li>{this.datasetLink("community/blab/zika-colombia")}</li>
-            </ul>
           </div>
         </CenterContent>
 
