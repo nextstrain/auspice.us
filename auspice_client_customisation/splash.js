@@ -1,7 +1,6 @@
 import React from "react"; // eslint-disable-line
-import { CenterContent } from "@auspice/components/splash/centerContent"; // eslint-disable-line
 import { handleDroppedFiles } from "./handleDroppedFiles";
-import { P, Title, NextstrainTitle } from './styles';
+import { P, Title, NextstrainTitle, CenterContent, Line, GitHub } from './styles';
 import { version } from "../package.json";
 
 
@@ -40,25 +39,31 @@ class SplashContent extends React.Component {
         </CenterContent>
 
         <CenterContent>
-          <div>
-            <h2>{`Drag & Drop your JSONs on here to view them`}</h2>
-          </div>
+            <Line/>
+              <h2 style={{color: "#30353f"}}>{`Drag & Drop a dataset JSON on here to view`}</h2>
+            <Line/>
         </CenterContent>
-
 
 
         <CenterContent>
           <P>
-            {`auspice.us uses Nextstrain, an open-source project to harness the scientific and public health potential of pathogen genome data. `}
+            {`auspice.us is part of Nextstrain, an open-source project to harness the scientific and public health potential of pathogen genome data. `}
             {`For more information about how to run the bioinformatics tools which this tool can visualise please see `}
             <a href="https://nextstrain.org/docs/bioinformatics/introduction-to-augur">the Nextstrain documentation</a>.
-            {`For more information about the software which powers these visualisations please see `}
+            {` The JSON schema for datasets is defined `}
+            <a href="https://github.com/nextstrain/augur/blob/master/augur/data/schema-export-v2.json">here</a>.
+            {` For more information about the software which powers these visualisations please see `}
             <a href="https://nextstrain.github.io/auspice/">the Nextstrain/Auspice documentation</a>.
+            {` Please `}
+            <a href="https://github.com/nextstrain/auspice.us/issues/new/choose">make an issue</a>
+            {` for any bugs, comments or questions. Thanks!`}
           </P>
 
-          <P>{`auspice.us is built by `}<a href="https://twitter.com/hamesjadfield">james hadfield</a></P>
+          <Line/>
+
+          <P>{`auspice.us v${version} is built by `}<a href="https://twitter.com/hamesjadfield">james hadfield</a></P>
           <NextstrainTitle/>
-          <P>{`uses `}<a href="https://github.com/nextstrain/auspice">auspice</a>{` v${version}`}</P>
+          <GitHub/>
         </CenterContent>
 
       </div>
