@@ -26,10 +26,10 @@ Install the dependencies, build & run via:
 ```bash
 npm install
 npm run build
-npm run view
+npm run start
 ```
 
-There is also a development server available, `npm run develop`.
+There is also a development server available via `npm run develop`.
 
 ## Getting JSONs to test with
 
@@ -43,8 +43,4 @@ curl http://data.nextstrain.org/ncov_global.json --compressed -o data/ncov_globa
 
 ## Deploy:
 
-> This needs updating
-
-```bash
-git push -f auspice-us-dev extend:master
-```
+Every push to master will deploy a new version of this app via heroku.
