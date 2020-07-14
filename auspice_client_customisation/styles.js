@@ -19,9 +19,13 @@ export const Title = styled.p`
 
 export const P = styled.p`
   text-align: center;
-  padding: 20px;
+  padding: 0px 20px 15px 20px;
   font-weight: 300;
   color: #30353f;
+`;
+
+export const Bold = styled.span`
+  font-weight: 500;
 `;
 
 

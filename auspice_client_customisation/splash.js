@@ -1,7 +1,7 @@
 import React from "react"; // eslint-disable-line
 import { handleDroppedFiles } from "./handleDroppedFiles";
-import { P, Title, NextstrainTitle, CenterContent, Line, GitHub } from './styles';
-import { version } from "../package.json";
+import { P, Bold, Title, NextstrainTitle, CenterContent, Line, GitHub } from './styles';
+import { version, dependencies } from "../package.json";
 
 
 class SplashContent extends React.Component {
@@ -32,36 +32,63 @@ class SplashContent extends React.Component {
         <CenterContent>
           <Title>auspice.us</Title>
           <P>
-            {`auspice.us allows interactive exploration of phylogenomic datasets by simply dragging & dropping them onto this page.`}
-            <br/>
-            {`No server is required and no data leaves your browser.`}
+            <Bold>
+              {`auspice.us allows interactive exploration of phylogenomic datasets by simply dragging & dropping them onto this page.`}
+            </Bold>
+          </P>
+          <P>
+            <Bold>Privacy: </Bold>
+            {`Your dataset is visualised client-side in the browser -- no data is transmitted, and no tracking cookies are used.
+            The only data downloaded from the internet is the visualisation (JavaScript) code, fonts and any map tiles needed.
+            This makes auspice.us appropriate to view datasets with sensitive information.`}
           </P>
         </CenterContent>
 
         <CenterContent>
             <Line/>
-              <h2 style={{color: "#30353f"}}>{`Drag & Drop a dataset JSON on here to view`}</h2>
+              <h2 style={{color: "#30353f", fontSize: 24}}>{`Drag & Drop a dataset on here to view`}</h2>
             <Line/>
         </CenterContent>
 
 
         <CenterContent>
           <P>
-            {`auspice.us is part of Nextstrain, an open-source project to harness the scientific and public health potential of pathogen genome data. `}
-            {`For more information about how to run the bioinformatics tools which this tool can visualise please see `}
-            <a href="https://nextstrain.org/docs/bioinformatics/introduction-to-augur">the Nextstrain documentation</a>.
-            {` The JSON schema for datasets is defined `}
-            <a href="https://github.com/nextstrain/augur/blob/master/augur/data/schema-export-v2.json">here</a>.
+            Currently supported data formats:
+            <ul>
+              <li>Auspice JSON - see the
+                <a href="https://github.com/nextstrain/augur/blob/master/augur/data/schema-export-v2.json"> JSON schema </a>
+                and the
+                <a href="https://nextstrain.org/docs/bioinformatics/introduction-to-augur"> Nextstrain docs </a>
+                for how to run the bioinformatics tools to generate these datasets
+              </li>
+              <li>
+                A phylogenetic tree in
+                <a href="https://en.wikipedia.org/wiki/Newick_format"> Newick format</a>
+              </li>
+            </ul>
+          </P>
+
+          <P>
+            {`auspice.us is part of `}
+            <Bold>Nextstrain</Bold>
+            {`, an open-source project to harness the scientific and public health potential of pathogen genome data. `}
             {` For more information about the software which powers these visualisations please see `}
-            <a href="https://nextstrain.github.io/auspice/">the Nextstrain/Auspice documentation</a>.
-            {` Please `}
-            <a href="https://github.com/nextstrain/auspice.us/issues/new/choose">make an issue</a>
-            {` for any bugs, comments or questions. Thanks!`}
+            <a href="https://nextstrain.github.io/auspice/">the Auspice documentation</a>.
+            </P><P>
+            {` For any bugs, comments or questions, please either `}
+            <a href="https://github.com/nextstrain/auspice.us/issues/new/choose">make a GitHub issue</a>
+            {` or create a post on the `}
+            <a href="https://discussion.nextstrain.org">Nextstrain discussion forum</a>
+            {`. Thanks!`}
           </P>
 
           <Line/>
 
-          <P>{`auspice.us v${version} is built by `}<a href="https://twitter.com/hamesjadfield">james hadfield</a></P>
+          <P>
+            {`auspice.us ${version} is built by `}<a href="https://twitter.com/hamesjadfield">james hadfield</a>
+            <br/>
+            {`and uses Auspice ${dependencies.auspice}.`}
+          </P>
           <NextstrainTitle/>
           <GitHub/>
         </CenterContent>
