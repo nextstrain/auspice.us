@@ -24,6 +24,10 @@ export const P = styled.p`
   color: #30353f;
 `;
 
+export const Bold = styled.span`
+  font-weight: 500;
+`;
+
 
 export const CenterContent = (props) => (
   <div className="row">

@@ -1,6 +1,6 @@
 import React from "react"; // eslint-disable-line
 import { handleDroppedFiles } from "./handleDroppedFiles";
-import { P, Title, NextstrainTitle, CenterContent, Line, GitHub } from './styles';
+import { P, Bold, Title, NextstrainTitle, CenterContent, Line, GitHub } from './styles';
 import { version } from "../package.json";
 
 
@@ -33,8 +33,11 @@ class SplashContent extends React.Component {
           <Title>auspice.us</Title>
           <P>
             {`auspice.us allows interactive exploration of phylogenomic datasets by simply dragging & dropping them onto this page.`}
-            <br/>
-            {`No server is required and no data leaves your browser.`}
+            <br/><br/>
+            <Bold>Privacy: </Bold>
+            {`Your dataset is visualised client-side in the browser -- no data is transmitted, and no tracking cookies are used.
+            The only data downloaded from the internet is the visualisation (JS) code, fonts and any map tiles needed.
+            This makes auspice.us appropriate to view datasets with sensitive information.`}
           </P>
         </CenterContent>
 
