@@ -1,2 +1,4 @@
 /dist/
 /node_modules/
+# main entrypoint index.html created by auspice (npm run build)
+/index.html
