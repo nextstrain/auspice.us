@@ -1,7 +1,7 @@
 import React from "react"; // eslint-disable-line
 import { handleDroppedFiles } from "./handleDroppedFiles";
 import { P, Bold, Title, NextstrainTitle, CenterContent, Line, GitHub } from './styles';
-import { version } from "../package.json";
+import { version, dependencies } from "../package.json";
 
 
 class SplashContent extends React.Component {
@@ -64,7 +64,11 @@ class SplashContent extends React.Component {
 
           <Line/>
 
-          <P>{`auspice.us v${version} is built by `}<a href="https://twitter.com/hamesjadfield">james hadfield</a></P>
+          <P>
+            {`auspice.us ${version} is built by `}<a href="https://twitter.com/hamesjadfield">james hadfield</a>
+            <br/>
+            {`and uses Auspice ${dependencies.auspice}.`}
+          </P>
           <NextstrainTitle/>
           <GitHub/>
         </CenterContent>
