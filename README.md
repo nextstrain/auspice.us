@@ -8,7 +8,7 @@ Auspice.us uses Nextstrain, an open-source project to harness the scientific and
 For more information about how to run the bioinformatics tools which this tool can visualise please see [the Nextstrain docs](https://nextstrain.org/docs/bioinformatics/introduction-to-augur).
 For more information about the software which powers these visualisations please see [the Auspice documentation](https://nextstrain.github.io/auspice/).
 
-It is currently available at [auspice-us.herokuapp.com/](https://auspice-us.herokuapp.com/).
+It is available at [auspice.us](http://auspice.us).
 
 
 ## How to build the site locally
