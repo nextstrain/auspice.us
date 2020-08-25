@@ -65,6 +65,10 @@ class SplashContent extends React.Component {
                 A phylogenetic tree in
                 <a href="https://en.wikipedia.org/wiki/Newick_format"> Newick format</a>
               </li>
+              <li>
+                Additional metadata as a CSV/TSV (drop this on once the tree has loaded).
+                <a href="https://nextstrain.github.io/auspice/advanced-functionality/drag-drop-csv-tsv"> See here for details.</a>
+              </li>
             </ul>
           </P>
 
