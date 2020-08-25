@@ -1,4 +1,11 @@
 
+
+### Version 0.3.0 (2020-08-26)
+
+* Upgraded auspice to 2.18.1
+* Automatically redirect http://auspice.us to https://auspice.us
+* Add entry to splash page surfacing the ability to drag & drop metadata in CSV/TSV format
+
 ### Version 0.2.0 (2020-07-14)
 
 * Upgraded auspice to 2.17.3
