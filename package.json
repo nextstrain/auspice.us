@@ -1,15 +1,18 @@
 {
   "name": "auspice.us",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "James Hadfield",
   "license": "AGPL-3.0-only",
   "scripts": {
+    "modify-auspice-server": "node scripts/modify-auspice-server.js",
+    "postinstall": "npm run modify-auspice-server",
     "build": "auspice build --verbose --extend ./auspice_client_customisation/config.json",
     "start": "auspice view --handlers ./server/handlers.js",
     "develop": "auspice develop --verbose --extend ./auspice_client_customisation/config.json --handlers ./server/handlers.js"
   },
   "dependencies": {
-    "auspice": "2.17.3"
+    "auspice": "2.18.1",
+    "heroku-ssl-redirect": "0.0.4"
   },
   "devDependencies": {}
 }
