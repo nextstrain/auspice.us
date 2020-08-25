@@ -9,7 +9,7 @@
     "develop": "auspice develop --verbose --extend ./auspice_client_customisation/config.json --handlers ./server/handlers.js"
   },
   "dependencies": {
-    "auspice": "2.17.3"
+    "auspice": "2.18.1"
   },
   "devDependencies": {}
 }
