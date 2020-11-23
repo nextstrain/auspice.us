@@ -1,4 +1,6 @@
+### Version 0.4.0 (2020-11-24)
 
+* Upgraded auspice to 2.20.1
 
 ### Version 0.3.0 (2020-08-26)
 
