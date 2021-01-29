@@ -1,3 +1,8 @@
+### Version 0.5.0 (2021-01-29)
+
+* Upgraded auspice to 2.23.0
+* [dev] Updated conda environment
+
 ### Version 0.4.0 (2020-11-24)
 
 * Upgraded auspice to 2.20.1
