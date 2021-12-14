@@ -7,14 +7,28 @@ import { version, dependencies } from "../package.json";
 class SplashContent extends React.Component {
   constructor(props) {
     super(props);
+    this.handleDrop = this.handleDrop.bind(this);
   }
   componentDidMount() {
-    document.addEventListener("dragover", (e) => {e.preventDefault();}, false);
-    document.addEventListener("drop", (e) => {
-      e.preventDefault();
-      handleDroppedFiles(this.props.dispatch, e.dataTransfer.files);
-    }, false);
+    document.addEventListener("dragover", this.handleDragover, false);
+    document.addEventListener("drop", this.handleDrop, false);
   }
+
+  componentWillUnmount() {
+    console.log("Removing auspice.us event listeners");
+    document.removeEventListener("dragover", this.handleDragover, false);
+    document.removeEventListener("drop", this.handleDrop, false);
+  }
+
+  handleDragover (event) {
+    event.preventDefault();
+  }
+
+  handleDrop (event) {
+    event.preventDefault();
+    handleDroppedFiles(this.props.dispatch, event.dataTransfer.files);
+  }
+
   datasetLink(path) {
     return (
       <div
