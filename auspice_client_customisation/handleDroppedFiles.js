@@ -1,5 +1,6 @@
 import { createStateFromQueryOrJSONs } from "@auspice/actions/recomputeReduxState";
-import { errorNotification } from "@auspice/actions/notifications";
+import { errorNotification, warningNotification } from "@auspice/actions/notifications";
+import { isAcceptedFileType as isAuspiceAcceptedFileType } from "@auspice/actions/filesDropped/constants";
 import newickToAuspiceJson from "./parseNewick";
 
 /* The following requires knowledge of how auspice works, is undocumented, and is liable to change since auspice
@@ -36,6 +37,17 @@ export const handleDroppedFiles = (dispatch, files) => {
       } else if (fileName.endsWith("new") || fileName.endsWith("nwk") || fileName.endsWith("newick")) {
         console.log("Parsing dropped file as a newick tree with branch lengths of divergence");
         json = newickToAuspiceJson(file.name, event.target.result);
+      /**
+       * Added as another `else if` statement after the checks for JSON and
+       * Newick files on the off chance that Auspice accepts these file types
+       * in the future. -Jover, 10 Dec 2021
+       */
+      } else if (isAuspiceAcceptedFileType(file)) {
+          console.log("Dropped metadata file cannot be parsed by auspice.us");
+          return dispatch(warningNotification({
+            message: "Failed to parse additional metadata file!",
+            details: "Please drop the additional metadata file after the tree has loaded."
+          }));
       } else {
         throw new Error("Parser for this file type not (yet) implemented");
       }

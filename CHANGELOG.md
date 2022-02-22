@@ -1,3 +1,7 @@
+### Version 0.10.0 (2022-02-22)
+
+* Fixed misleading error notifications when dragging on metadata files ([PR 16](https://github.com/nextstrain/auspice.us/pull/16)).
+
 ### Version 0.9.0 (2022-02-22)
 
 * Upgraded auspice to 2.33.0
