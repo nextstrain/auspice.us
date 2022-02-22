@@ -1,3 +1,15 @@
+### Version 0.9.0 (2022-02-22)
+
+* Upgraded auspice to 2.33.0
+
+### Version 0.8.0 (2021-09-16)
+
+* Upgraded auspice to 2.31.0
+
+### Version 0.8.0 (2021-07-16)
+
+* Upgraded auspice to 2.29.1
+
 ### Version 0.6.0 (2021-06-01)
 
 * Upgraded auspice to 2.26.0
