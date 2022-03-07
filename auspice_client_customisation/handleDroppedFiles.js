@@ -1,6 +1,8 @@
 import { createStateFromQueryOrJSONs } from "@auspice/actions/recomputeReduxState";
 import { errorNotification, warningNotification } from "@auspice/actions/notifications";
-import { Dataset } from "@auspice/actions/loadData";
+import { Dataset, addEndOfNarrativeBlock, getDatasetNamesFromUrl } from "@auspice/actions/loadData";
+import { parseMarkdownNarrativeFile } from "@auspice/util/parseNarrative";
+import { parseMarkdown } from "@auspice/util/parseMarkdown";
 import { isAcceptedFileType as isAuspiceAcceptedFileType } from "@auspice/actions/filesDropped/constants";
 import newickToAuspiceJson from "./parseNewick";
 
@@ -8,14 +10,14 @@ import newickToAuspiceJson from "./parseNewick";
 doesn't officially expose these functions */
 
 export const handleDroppedFiles = async (dispatch, files) => {
-  const datasets = await collectDatasets(dispatch, files);
+  const {datasets, narrative} = await collectDatasets(dispatch, files);
   if (Object.values(datasets).length===0) {
     return dispatch(errorNotification({
       message: `auspice.us couldn't load any of the dropped files!`,
       details: `Please consider making a GitHub issue for this to help us improve auspice.us. See the browser console for more details.`
     }));
   }
-  await loadDatasets(dispatch, datasets);
+  await loadDatasets(dispatch, datasets, narrative);
   return;
 };
 
@@ -51,7 +53,7 @@ function readFile(file, isJSON=true) {
  * @returns 
  */
 async function collectDatasets(dispatch, files) {
-  const datasets = {};
+  let datasets = {};
   const sidecarMappings = { // suffix -> property (on `Dataset` object)
     "tip-frequencies":  "tipFrequencies",
     measurements: "measurements",
@@ -74,6 +76,7 @@ async function collectDatasets(dispatch, files) {
         const name = file.name.slice(0, -5) // removes ".json" suffix
           .replaceAll("_", "/"); // nextstrain-like file path display
         const d = new Dataset(name);
+        d.apiCalls = {}; // ensures no prototypes mistakenly make api calls
         d.main = await readFile(file);
         datasets[nameLower] = d;
         logs.push(`Read ${file.name} as a main dataset JSON file`);
@@ -84,6 +87,7 @@ async function collectDatasets(dispatch, files) {
       filesSeen.add(nameLower);
       try {
         const d = new Dataset(file.name);
+        d.apiCalls = {}; // ensures no prototypes mistakenly make api calls
         d.main = newickToAuspiceJson(file.name, await readFile(file, false));
         datasets[nameLower] = d;
         logs.push(`Read ${file.name} as a newick file`);
@@ -118,6 +122,19 @@ async function collectDatasets(dispatch, files) {
     }
   }
 
+  /* finally, load any markdown files as a narrative (after all datasets have been created) */
+  let narrative;
+  for (const file of files) {
+    const nameLower = file.name.toLowerCase();
+    if (nameLower.endsWith(".md")) {
+      filesSeen.add(nameLower);
+      logs.push(`Read ${file.name} as a narrative.`);
+      ({datasets, narrative} = await parseNarrative(await readFile(file, false), datasets, logs));
+      break; // don't consider multiple markdown files
+    }
+  }
+
+
   /* are there any files we haven't (attempted to) read? */
   for (const file of files) {
     if (!filesSeen.has(file.name.toLowerCase())) {
@@ -126,7 +143,7 @@ async function collectDatasets(dispatch, files) {
   }
 
   console.log(logs.join("\n"))
-  return datasets;
+  return {datasets, narrative};
 }
 
 /**
@@ -135,24 +152,41 @@ async function collectDatasets(dispatch, files) {
  * @param {*} dispatch 
  * @param {*} datasets 
  */
-async function loadDatasets(dispatch, datasets) {
-  const datasetList = Object.values(datasets); // we have no sensible way of ordering these
-  if (datasetList.length > 2) {
-    console.log("Only loading the first two datasets");
+async function loadDatasets(dispatch, datasets, narrative) {
+
+  /* access the Dataset() objects for the main and possible 2nd trees to be displayed */
+  let dataset1, dataset2; // left tree, right tree
+  if (narrative) {
+    const [a, b] = getDatasetNamesFromUrl(narrative[0].dataset);
+    dataset1 = datasets[a];
+    dataset2 = datasets[b];
+    if (!dataset1) {
+      console.error(`Narrative starting dataset(s): ${a}, ${b}\nExpected dataset filenames: ${convertPrefixToDatasetFilename(a)}, ${convertPrefixToDatasetFilename(b)}`)
+      return dispatch(errorNotification({
+        message: "Could not find the starting datasets for the narrative",
+        details: "Please see the browser console for more details."
+      }));
+    }
+  } else { 
+    const datasetList = Object.values(datasets); // we have no sensible way of ordering these
+    if (datasetList.length > 2) {
+      console.log("Only loading the first two datasets");
+    }
+    dataset1 = datasetList[0];
+    dataset2 = datasetList.length > 1 ? datasetList[1] : false;
   }
-  const dataset = datasetList[0];
-  const dataset2 = datasetList.length > 1 ? datasetList[1] : false;
 
   /* load (into redux state) the main dataset(s) */
   try {
     dispatch({
       type: "CLEAN_START",
+      pathnameShouldBe: "",
       ...createStateFromQueryOrJSONs({
-        json: dataset.main,
+        json: dataset1.main,
         secondTreeDataset: dataset2 ? dataset2.main : null,
         query: {},
-        narrativeBlocks: undefined,
-        mainTreeName: dataset.name,
+        narrativeBlocks: narrative,
+        mainTreeName: dataset1.name,
         secondTreeName: dataset2 ? dataset2.name : null,
         dispatch
       })
@@ -166,8 +200,57 @@ async function loadDatasets(dispatch, datasets) {
   }
 
   /* load (into redux state) sidecar files (if there are any) */
-  dataset.loadSidecars(dispatch);
+  dataset1.loadSidecars(dispatch);
+
+  if (narrative) {
+    dispatch({type: "CACHE_JSONS", jsons: datasets});
+  }
 
   /* change page (splash page displayed until this action is dispatched) */
   dispatch({type: "PAGE_CHANGE", displayComponent: "main"});
+}
+
+/**
+ * Similar to the function `loadNarrative` in Auspice but with important differences
+ * as auspice.us doesn't fetch the datasets & always starts on slide 1.
+ * 
+ * This returns a modified `datasets` object such that narrative blocks have a corresponding
+ * dataset to load (if present in the drag & dropped files).
+ */
+async function parseNarrative(fileText, datasets, logs) {
+  const datasetsForNarrative = {};
+  const blocks = await parseMarkdownNarrativeFile(fileText, parseMarkdown);
+  addEndOfNarrativeBlock(blocks)
+  
+  /* link each "block" to a dataset. This is not straightforward, as narrative slides
+  are linked to a URL not a filepath. Auspice uses the function `getDatasetNamesFromUrl` to
+  perform this linking and expects the appropriate dataset to be present in the cache.
+  We therefore modify `datasets` so that these keys exist */
+  logs.push("Linking narrative datasets to dropped JSON datasets.")
+  const prefixesSeen = new Set();
+  for (const block of blocks) {
+    for (const prefix of getDatasetNamesFromUrl(block.dataset)) {
+      if (prefix && !prefixesSeen.has(prefix)) {
+        const filename = convertPrefixToDatasetFilename(prefix);
+        if (datasets[filename]) {
+          logs.push(`Narrative slide URL ${prefix} → ${filename}`)
+          datasetsForNarrative[prefix] = datasets[convertPrefixToDatasetFilename(prefix)];
+        } else {
+          logs.push(`Narrative slide URL ${prefix} expected ${filename} but this wasn't found.`)
+        }
+      }
+      prefixesSeen.add(prefix)
+    }
+  }
+  return {narrative: blocks, datasets: datasetsForNarrative};
+}
+
+/**
+ * Prefix here is used the context of auspice, whereby an auspice API
+ * request would include the `?prefix={prefix}` query. We scan the
+ * datasets of dropped files and try to find a match for each prefix.
+ */
+function convertPrefixToDatasetFilename(prefix) {
+  if (!prefix) return undefined;
+  return prefix.replaceAll("/", "_") + ".json";
 }
