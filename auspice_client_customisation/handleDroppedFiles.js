@@ -8,14 +8,6 @@ import newickToAuspiceJson from "./parseNewick";
 doesn't officially expose these functions */
 
 export const handleDroppedFiles = async (dispatch, files) => {
-  /* Right now we can only deal with a single dropped file.
-  There are a few situations which we want to deal with which involve
-  multiple files, including:
-  - Frequencies JSON
-  - Root sequence JSON (not yet implemented in auspice!)
-  - Narratives markdown (should be dropped with the dataset JSON(s) at the same time)
-  */
-
   const datasets = await collectDatasets(dispatch, files);
   if (Object.values(datasets).length===0) {
     return dispatch(errorNotification({
@@ -23,7 +15,7 @@ export const handleDroppedFiles = async (dispatch, files) => {
       details: `Please consider making a GitHub issue for this to help us improve auspice.us. See the browser console for more details.`
     }));
   }
-  await loadJsonDatasets(dispatch, datasets);
+  await loadDatasets(dispatch, datasets);
   return;
 };
 
@@ -54,8 +46,7 @@ function readFile(file, isJSON=true) {
  * Auspice uses to represent a "main" dataset JSON + any associated sidecar files.
  * If the dropped file is newick then we convert that to JSON-like structure.
  * 
- * This function currently only returns a single Dataset, and does not consider sidecars.
- * This capability will be added in future commits.
+ * This function currently only returns a single Dataset with sidecars, as applicable.
  * @param {*} files 
  * @returns 
  */
@@ -109,6 +100,24 @@ async function collectDatasets(dispatch, files) {
     } 
   }
 
+  /* loop through files and, if a sidecar, load it into the associated `Dataset` object */
+  for (const file of files) {
+    const nameLower = file.name.toLowerCase();
+    if (filesSeen.has(nameLower) || !nameLower.endsWith("json")) continue;
+    for (const [sidecarSuffix, sidecarPropName] of Object.entries(sidecarMappings)) {
+      if (nameLower.endsWith(`_${sidecarSuffix}.json`)) { // filename looks like a sidecar file?
+        filesSeen.add(nameLower);
+        const mainNameLower = nameLower.replace(`_${sidecarSuffix}.json`, '.json');
+        if (datasets[mainNameLower]) {
+          datasets[mainNameLower][sidecarPropName] = readFile(file);
+          logs.push(`Read ${file.name} as a sidecar file of ${datasets[mainNameLower].name}`);
+        } else {
+          logs.push(`Sidecar file ${file.name} has no associated main dataset file and has been skipped.`);
+        }
+      }
+    }
+  }
+
   /* are there any files we haven't (attempted to) read? */
   for (const file of files) {
     if (!filesSeen.has(file.name.toLowerCase())) {
@@ -126,16 +135,18 @@ async function collectDatasets(dispatch, files) {
  * @param {*} dispatch 
  * @param {*} datasets 
  */
-async function loadJsonDatasets(dispatch, datasets) {
+async function loadDatasets(dispatch, datasets) {
   if (Object.values(datasets).length > 1) {
     console.log("Only loading the first dataset as auspice.us does not yet handle multiple datasets");
   }
-  const json = await Object.values(datasets)[0].main;
+  const dataset = Object.values(datasets)[0];
+
+  /* load (into redux state) the main dataset(s) */
   try {
     dispatch({
       type: "CLEAN_START",
       ...createStateFromQueryOrJSONs({
-        json,
+        json: dataset.main,
         secondTreeDataset: undefined,
         query: {},
         narrativeBlocks: undefined,
@@ -151,5 +162,10 @@ async function loadJsonDatasets(dispatch, datasets) {
       details: "Please see the browser console for more details."
     }));
   }
+
+  /* load (into redux state) sidecar files (if there are any) */
+  dataset.loadSidecars(dispatch);
+
+  /* change page (splash page displayed until this action is dispatched) */
   dispatch({type: "PAGE_CHANGE", displayComponent: "main"});
 }
