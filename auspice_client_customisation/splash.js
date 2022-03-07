@@ -103,9 +103,7 @@ class SplashContent extends React.Component {
           <Line/>
 
           <P>
-            {`auspice.us ${version} is built by `}<a href="https://twitter.com/hamesjadfield">james hadfield</a>
-            <br/>
-            {`and uses Auspice ${dependencies.auspice}.`}
+            {`auspice.us ${version} (Auspice ${dependencies.auspice})`}
           </P>
           <NextstrainTitle/>
           <GitHub/>
