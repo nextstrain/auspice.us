@@ -1,13 +1,13 @@
 import { createStateFromQueryOrJSONs } from "@auspice/actions/recomputeReduxState";
 import { errorNotification, warningNotification } from "@auspice/actions/notifications";
+import { Dataset } from "@auspice/actions/loadData";
 import { isAcceptedFileType as isAuspiceAcceptedFileType } from "@auspice/actions/filesDropped/constants";
 import newickToAuspiceJson from "./parseNewick";
 
 /* The following requires knowledge of how auspice works, is undocumented, and is liable to change since auspice
 doesn't officially expose these functions */
 
-export const handleDroppedFiles = (dispatch, files) => {
-
+export const handleDroppedFiles = async (dispatch, files) => {
   /* Right now we can only deal with a single dropped file.
   There are a few situations which we want to deal with which involve
   multiple files, including:
@@ -15,60 +15,141 @@ export const handleDroppedFiles = (dispatch, files) => {
   - Root sequence JSON (not yet implemented in auspice!)
   - Narratives markdown (should be dropped with the dataset JSON(s) at the same time)
   */
-  if (files.length !== 1) {
-    return dispatch(errorNotification({
-      message: `auspice.us can only handle a single dropped file`,
-      details: `${files.length} were dropped!`
-    }));
-  }
-  const file = files[0];
-  const fileReader = new window.FileReader();
-  fileReader.onloadstart = () => {
-    console.log(`Reading dropped file ${file.name}`);
-  }
-  fileReader.onload = (event) => {
-    let state;
-    try {
-      let json;
-      const fileName = file.name.toLowerCase();
-      if (fileName.endsWith("json")) {
-        console.log("Parsing dropped file as Auspice v2 JSON");
-        json = JSON.parse(event.target.result);
-      } else if (fileName.endsWith("new") || fileName.endsWith("nwk") || fileName.endsWith("newick")) {
-        console.log("Parsing dropped file as a newick tree with branch lengths of divergence");
-        json = newickToAuspiceJson(file.name, event.target.result);
-      /**
-       * Added as another `else if` statement after the checks for JSON and
-       * Newick files on the off chance that Auspice accepts these file types
-       * in the future. -Jover, 10 Dec 2021
-       */
-      } else if (isAuspiceAcceptedFileType(file)) {
-          console.log("Dropped metadata file cannot be parsed by auspice.us");
-          return dispatch(warningNotification({
-            message: "Failed to parse additional metadata file!",
-            details: "Please drop the additional metadata file after the tree has loaded."
-          }));
-      } else {
-        throw new Error("Parser for this file type not (yet) implemented");
-      }
-      state = createStateFromQueryOrJSONs({json: json, query: {}});
-    } catch (err) {
-      return dispatch(errorNotification({
-        message: `auspice.us attempted to read this file but failed!`,
-        details: `Please consider making a GitHub issue for this to help us improve auspice.us. Error message: ${err.message}`
-      }));
-    }
 
-    // Load the (parsed) tree data into redux store
-    dispatch({type: "CLEAN_START", ...state});
-    // Load the "main" page, otherwise we'll always be seeing the splash page!
-    dispatch({type: "PAGE_CHANGE", displayComponent: "main"});
-  }
-  fileReader.onerror = (err) => {
+  const datasets = await collectDatasets(dispatch, files);
+  if (Object.values(datasets).length===0) {
     return dispatch(errorNotification({
-      message: `auspice.us attempted to parse this file but failed!`,
-      details: `Please consider making a GitHub issue for this to help us improve auspice.us. Error message: ${err.message}`
+      message: `auspice.us couldn't load any of the dropped files!`,
+      details: `Please consider making a GitHub issue for this to help us improve auspice.us. See the browser console for more details.`
     }));
-  };
-  fileReader.readAsText(file)
+  }
+  await loadJsonDatasets(dispatch, datasets);
+  return;
 };
+
+/** promisify FileReader's readAsText() so we can use it within
+ * async functions via `await readJson(file)`.
+ * Adapted from https://stackoverflow.com/a/51026615
+ */
+function readFile(file, isJSON=true) {
+  return new Promise((resolve, reject) => {
+    const fileReader = new window.FileReader();
+    fileReader.onloadend = function(e) {
+      if (isJSON) {
+        const json = JSON.parse(e.target.result);
+        resolve(json);
+      } else {
+        resolve(e.target.result);
+      }
+    };
+    fileReader.onerror = function(e) {
+      reject(e);
+    };
+    fileReader.readAsText(file);
+  });
+}
+
+/**
+ * Parse the dropped files into a collection of `Dataset` objects, which is the structure
+ * Auspice uses to represent a "main" dataset JSON + any associated sidecar files.
+ * If the dropped file is newick then we convert that to JSON-like structure.
+ * 
+ * This function currently only returns a single Dataset, and does not consider sidecars.
+ * This capability will be added in future commits.
+ * @param {*} files 
+ * @returns 
+ */
+async function collectDatasets(dispatch, files) {
+  const datasets = {};
+  const sidecarMappings = { // suffix -> property (on `Dataset` object)
+    "tip-frequencies":  "tipFrequencies",
+    measurements: "measurements",
+    "root-sequence": "rootSequence"
+  };
+  const newickFileTypes = ["new", "nwk", "newick"];
+  const isMain = (f) => (
+    f.name.toLowerCase().endsWith("json") &&
+    Object.keys(sidecarMappings).every((suffix) => !f.name.toLowerCase().endsWith(`_${suffix}.json`))
+  );
+  const filesSeen = new Set(); // lowercase names of files we have read (successfully or otherwise)
+  const logs = [];
+
+  /* first loop through files to read main-dataset JSONs and tree-like files (newick etc) */
+  for (const file of files) {
+    const nameLower = file.name.toLowerCase();
+    if (isMain(file)) {
+      filesSeen.add(nameLower);
+      try {
+        const name = file.name.slice(0, -5) // removes ".json" suffix
+          .replaceAll("_", "/"); // nextstrain-like file path display
+        const d = new Dataset(name);
+        d.main = await readFile(file);
+        datasets[nameLower] = d;
+        logs.push(`Read ${file.name} as a main dataset JSON file`);
+      } catch (e) {
+        console.error(`${file.name} failed to be read as a main dataset JSON file. Error: ${e}`);
+      }
+    } else if (newickFileTypes.some((suffix) => nameLower.endsWith(suffix))) {
+      filesSeen.add(nameLower);
+      try {
+        const d = new Dataset(file.name);
+        d.main = newickToAuspiceJson(file.name, await readFile(file, false));
+        datasets[nameLower] = d;
+        logs.push(`Read ${file.name} as a newick file`);
+      } catch (e) {
+        console.error(`${file.name} failed to be read as a newick tree. Error: ${e}`);
+      }
+    } else if (isAuspiceAcceptedFileType(file)) {
+      filesSeen.add(nameLower);
+      logs.push(`${file.name} is a metadata file and should be dropped onto the tree not the splash page`);
+      dispatch(warningNotification({
+        message: "Failed to parse additional metadata file!",
+        details: "Please drop the metadata file after the tree has loaded."
+      }));
+    } 
+  }
+
+  /* are there any files we haven't (attempted to) read? */
+  for (const file of files) {
+    if (!filesSeen.has(file.name.toLowerCase())) {
+      logs.push(`Unparsed file: ${file.name}`);
+    }
+  }
+
+  console.log(logs.join("\n"))
+  return datasets;
+}
+
+/**
+ * Load the datasets. This will result in a switch away from the splash page.
+ * Currently only one dataset is considered.
+ * @param {*} dispatch 
+ * @param {*} datasets 
+ */
+async function loadJsonDatasets(dispatch, datasets) {
+  if (Object.values(datasets).length > 1) {
+    console.log("Only loading the first dataset as auspice.us does not yet handle multiple datasets");
+  }
+  const json = await Object.values(datasets)[0].main;
+  try {
+    dispatch({
+      type: "CLEAN_START",
+      ...createStateFromQueryOrJSONs({
+        json,
+        secondTreeDataset: undefined,
+        query: {},
+        narrativeBlocks: undefined,
+        mainTreeName: Object.values(datasets)[0].name,
+        secondTreeName: null,
+        dispatch
+      })
+    });
+  } catch (e) {
+    console.error(`Failed to parse dataset ${Object.keys(datasets)[0]}. Error: ${e}`)
+    return dispatch(errorNotification({
+      message: "Failed to parse the dataset!",
+      details: "Please see the browser console for more details."
+    }));
+  }
+  dispatch({type: "PAGE_CHANGE", displayComponent: "main"});
+}
