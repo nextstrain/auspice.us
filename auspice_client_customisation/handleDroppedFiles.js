@@ -136,10 +136,12 @@ async function collectDatasets(dispatch, files) {
  * @param {*} datasets 
  */
 async function loadDatasets(dispatch, datasets) {
-  if (Object.values(datasets).length > 1) {
-    console.log("Only loading the first dataset as auspice.us does not yet handle multiple datasets");
+  const datasetList = Object.values(datasets); // we have no sensible way of ordering these
+  if (datasetList.length > 2) {
+    console.log("Only loading the first two datasets");
   }
-  const dataset = Object.values(datasets)[0];
+  const dataset = datasetList[0];
+  const dataset2 = datasetList.length > 1 ? datasetList[1] : false;
 
   /* load (into redux state) the main dataset(s) */
   try {
@@ -147,11 +149,11 @@ async function loadDatasets(dispatch, datasets) {
       type: "CLEAN_START",
       ...createStateFromQueryOrJSONs({
         json: dataset.main,
-        secondTreeDataset: undefined,
+        secondTreeDataset: dataset2 ? dataset2.main : null,
         query: {},
         narrativeBlocks: undefined,
-        mainTreeName: Object.values(datasets)[0].name,
-        secondTreeName: null,
+        mainTreeName: dataset.name,
+        secondTreeName: dataset2 ? dataset2.name : null,
         dispatch
       })
     });
