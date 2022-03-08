@@ -23,6 +23,9 @@ export const P = styled.div`
     padding: 0px 20px 15px 20px;
     font-weight: 300;
     color: #30353f;
+    & > ul > li {
+      padding-bottom: 10px;
+    }
   }
 `;
 
