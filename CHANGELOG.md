@@ -1,3 +1,11 @@
+### Version 0.11.0 (2022-02-22)
+
+Improved dataset loading functionality ([PR 23](https://github.com/nextstrain/auspice.us/pull/23)).
+* Sidecar files can now be loaded.
+* Two datasets can be loaded, but this functionality is not particularly useful as there is no way to order the trees.
+* A narrative (markdown) can be loaded, as long as they are dragged together with the datasets they reference.
+
+
 ### Version 0.10.0 (2022-02-22)
 
 * Fixed misleading error notifications when dragging on metadata files ([PR 16](https://github.com/nextstrain/auspice.us/pull/16)).

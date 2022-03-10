@@ -1,6 +1,5 @@
 import React from "react"; // eslint-disable-line
 import styled from 'styled-components';
-import { version } from "../package.json";
 const logoPNG = require("./nextstrain-logo-small.png");
 const gitHubLogo = require("./GitHub-Mark-32px.png");
 
@@ -17,11 +16,17 @@ export const Title = styled.p`
   background-color: #30353f;
 `;
 
-export const P = styled.p`
-  text-align: center;
-  padding: 0px 20px 15px 20px;
-  font-weight: 300;
-  color: #30353f;
+export const P = styled.div`
+  &&& {
+    text-align: center;
+    margin: 16px 0px;
+    padding: 0px 20px 15px 20px;
+    font-weight: 300;
+    color: #30353f;
+    & > ul > li {
+      padding-bottom: 10px;
+    }
+  }
 `;
 
 export const Bold = styled.span`
