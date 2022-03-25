@@ -55,26 +55,47 @@ const getTreeStruct = (nwk) => {
   const tree = parseNewick(nwk);
 
   /* recursively create missing node names */
-  let count = 10000;
+  let count = 10000,allBranchLengthsAreZero=true;
+  let NodeNamesDictForDeduplicating = {};
   const addNodeName = (node) => {
+	if (! ("node_attrs" in node)) node.node_attrs= {};
+    if (! ("div" in node.node_attrs)) node.node_attrs.div= 0;
     if (!node.name) {
       node.name=`NODE${count}`;
       count++;
     }
+    if (NodeNamesDictForDeduplicating[node.name]) {
+	  let i = 2;
+	  while (NodeNamesDictForDeduplicating[node.name+"_"+i]) i++;
+	  node.name = node.name+"_"+i;
+    }
+	NodeNamesDictForDeduplicating[node.name]=true;
+	
     if (node.children) {
       node.children.forEach((child) => addNodeName(child));
     }
+	
   };
   addNodeName(tree);
 
   /* divergence should be cumulative for Auspice! */
   const cumulativeDivs = (node, soFar=0) => {
     node.node_attrs.div += soFar;
+	if (soFar) allBranchLengthsAreZero = false;
     if (node.children) {
       node.children.forEach((child) => cumulativeDivs(child, node.node_attrs.div));
     }
   };
   cumulativeDivs(tree);
+  
+  
+  const setAllBranchLengthsToOne = (node,depth) => {
+	node.node_attrs.div = depth;
+	if (node.children) {
+      node.children.forEach((child) => setAllBranchLengthsToOne(child, depth+1));
+    }
+  }
+  if (allBranchLengthsAreZero) setAllBranchLengthsToOne(tree,0);
 
   return tree;
 };
