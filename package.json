@@ -1,6 +1,6 @@
 {
   "name": "auspice.us",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "author": "James Hadfield",
   "license": "AGPL-3.0-only",
   "scripts": {
@@ -11,7 +11,7 @@
     "develop": "auspice develop --verbose --extend ./auspice_client_customisation/config.json --handlers ./server/handlers.js"
   },
   "dependencies": {
-    "auspice": "2.34.1",
+    "auspice": "2.36.0",
     "heroku-ssl-redirect": "0.0.4"
   }
 }
