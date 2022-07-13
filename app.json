@@ -1,0 +1,22 @@
+{
+  "name": "auspice.us",
+  "scripts": {},
+  "env": {
+    "HOST": {
+      "description": "For Auspice server; see https://docs.nextstrain.org/projects/auspice/en/stable/server/index.html#deploying-via-heroku",
+      "value": "0.0.0.0"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "addons": [],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "stack": "heroku-22"
+}
