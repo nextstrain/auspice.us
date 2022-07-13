@@ -41,6 +41,16 @@ curl http://data.nextstrain.org/ncov_global.json --compressed -o data/ncov_globa
 ```
 
 
-## Deploy:
+## Deploy
 
-Every push to master will deploy a new version of this app via heroku.
+Deployments are handled by a Heroku pipeline connected to GitHub under the nextstrain-bot user account. The following apps are used:
+
+### Review Apps
+
+Heroku automatically creates a review app for each opened PR that isn't from a fork. These are based on configuration in [app.json](./app.json).
+
+### Production
+
+There is one production app configured to auto-deploy from `master`. The DNS is configured to serve the app at https://auspice.us.
+
+Note that changes to [app.json](./app.json) only affect newly deployed apps. In practice, this means it will work fine for new review apps, but changes must be manually applied to the existing production app.
