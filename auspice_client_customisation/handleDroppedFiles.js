@@ -232,9 +232,12 @@ async function parseNarrative(fileText, datasets, logs) {
     for (const prefix of getDatasetNamesFromUrl(block.dataset)) {
       if (prefix && !prefixesSeen.has(prefix)) {
         const filename = convertPrefixToDatasetFilename(prefix);
-        if (datasets[filename]) {
+        // Must use lowercase filename to find dataset since the datasets
+        // are stored in lowercase within collectDatasets
+        const filenameLower = filename.toLowerCase();
+        if (datasets[filenameLower]) {
           logs.push(`Narrative slide URL ${prefix} → ${filename}`)
-          datasetsForNarrative[prefix] = datasets[convertPrefixToDatasetFilename(prefix)];
+          datasetsForNarrative[prefix] = datasets[filenameLower];
         } else {
           logs.push(`Narrative slide URL ${prefix} expected ${filename} but this wasn't found.`)
         }
