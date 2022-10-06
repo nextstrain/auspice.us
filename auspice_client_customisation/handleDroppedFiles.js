@@ -47,10 +47,10 @@ function readFile(file, isJSON=true) {
  * Parse the dropped files into a collection of `Dataset` objects, which is the structure
  * Auspice uses to represent a "main" dataset JSON + any associated sidecar files.
  * If the dropped file is newick then we convert that to JSON-like structure.
- * 
+ *
  * This function currently only returns a single Dataset with sidecars, as applicable.
- * @param {*} files 
- * @returns 
+ * @param {*} files
+ * @returns
  */
 async function collectDatasets(dispatch, files) {
   let datasets = {};
@@ -101,7 +101,7 @@ async function collectDatasets(dispatch, files) {
         message: "Failed to parse additional metadata file!",
         details: "Please drop the metadata file after the tree has loaded."
       }));
-    } 
+    }
   }
 
   /* loop through files and, if a sidecar, load it into the associated `Dataset` object */
@@ -149,8 +149,8 @@ async function collectDatasets(dispatch, files) {
 /**
  * Load the datasets. This will result in a switch away from the splash page.
  * Currently only one dataset is considered.
- * @param {*} dispatch 
- * @param {*} datasets 
+ * @param {*} dispatch
+ * @param {*} datasets
  */
 async function loadDatasets(dispatch, datasets, narrative) {
 
@@ -167,7 +167,7 @@ async function loadDatasets(dispatch, datasets, narrative) {
         details: "Please see the browser console for more details."
       }));
     }
-  } else { 
+  } else {
     const datasetList = Object.values(datasets); // we have no sensible way of ordering these
     if (datasetList.length > 2) {
       console.log("Only loading the first two datasets");
@@ -213,7 +213,7 @@ async function loadDatasets(dispatch, datasets, narrative) {
 /**
  * Similar to the function `loadNarrative` in Auspice but with important differences
  * as auspice.us doesn't fetch the datasets & always starts on slide 1.
- * 
+ *
  * This returns a modified `datasets` object such that narrative blocks have a corresponding
  * dataset to load (if present in the drag & dropped files).
  */
@@ -221,7 +221,7 @@ async function parseNarrative(fileText, datasets, logs) {
   const datasetsForNarrative = {};
   const blocks = await parseMarkdownNarrativeFile(fileText, parseMarkdown);
   addEndOfNarrativeBlock(blocks)
-  
+
   /* link each "block" to a dataset. This is not straightforward, as narrative slides
   are linked to a URL not a filepath. Auspice uses the function `getDatasetNamesFromUrl` to
   perform this linking and expects the appropriate dataset to be present in the cache.
