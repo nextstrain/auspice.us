@@ -3,6 +3,9 @@
   "version": "0.12.0",
   "author": "James Hadfield",
   "license": "AGPL-3.0-only",
+  "engines": {
+    "node": "16.x"
+  },
   "scripts": {
     "modify-auspice-server": "node scripts/modify-auspice-server.js",
     "postinstall": "npm run modify-auspice-server",
