@@ -1,6 +1,7 @@
 import { createStateFromQueryOrJSONs } from "@auspice/actions/recomputeReduxState";
 import { errorNotification, warningNotification } from "@auspice/actions/notifications";
 import { Dataset, addEndOfNarrativeBlock, getDatasetNamesFromUrl } from "@auspice/actions/loadData";
+import { parseMeasurementsJSON } from "@auspice/actions/measurements";
 import { parseMarkdownNarrativeFile } from "@auspice/util/parseNarrative";
 import { parseMarkdown } from "@auspice/util/parseMarkdown";
 import { isAcceptedFileType as isAuspiceAcceptedFileType } from "@auspice/actions/filesDropped/constants";
@@ -113,7 +114,15 @@ async function collectDatasets(dispatch, files) {
         filesSeen.add(nameLower);
         const mainNameLower = nameLower.replace(`_${sidecarSuffix}.json`, '.json');
         if (datasets[mainNameLower]) {
-          datasets[mainNameLower][sidecarPropName] = readFile(file);
+          // Parse measurements sidecars separately here.
+          // See https://github.com/nextstrain/auspice/pull/1663
+          if (sidecarPropName === 'measurements') {
+            datasets[mainNameLower][sidecarPropName] = readFile(file)
+              .then((json) => parseMeasurementsJSON(json))
+              .catch((err) => console.error("Failed to read and parse measurements sidecar", err));
+          } else {
+            datasets[mainNameLower][sidecarPropName] = readFile(file);
+          }
           logs.push(`Read ${file.name} as a sidecar file of ${datasets[mainNameLower].name}`);
         } else {
           logs.push(`Sidecar file ${file.name} has no associated main dataset file and has been skipped.`);
