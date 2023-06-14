@@ -4,7 +4,7 @@
   "author": "James Hadfield",
   "license": "AGPL-3.0-only",
   "engines": {
-    "node": "^16"
+    "node": "^18"
   },
   "scripts": {
     "modify-auspice-server": "node scripts/modify-auspice-server.js",
