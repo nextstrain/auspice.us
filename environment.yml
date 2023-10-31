@@ -1,5 +1,0 @@
-name: auspice.us
-channels:
-  - conda-forge
-dependencies:
-  - nodejs=15

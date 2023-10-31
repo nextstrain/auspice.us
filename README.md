@@ -13,13 +13,7 @@ It is available at [auspice.us](http://auspice.us).
 
 ## How to build the site locally
 
-Ensure you have nodejs available.
-You can use the provided conda environment if desired:
-
-```bash
-conda env create -f environment.yml
-conda activate auspice.us
-```
+Ensure you have Node.js available, specifically the version defined in package.json.
 
 Install the dependencies, build & run via:
 

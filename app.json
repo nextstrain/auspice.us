@@ -3,7 +3,7 @@
   "scripts": {},
   "env": {
     "HOST": {
-      "description": "For Auspice server; see https://docs.nextstrain.org/projects/auspice/en/stable/server/index.html#deploying-via-heroku",
+      "description": "For Auspice server; see https://docs.nextstrain.org/projects/auspice/en/stable/server/overview.html#deploying-via-heroku",
       "value": "0.0.0.0"
     }
   },
