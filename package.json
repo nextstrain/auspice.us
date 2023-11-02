@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "auspice": "2.50.0",
-    "heroku-ssl-redirect": "0.0.4"
+    "heroku-ssl-redirect": "0.0.4",
+    "newick-js": "^1.2.1"
   }
 }
