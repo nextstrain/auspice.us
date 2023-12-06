@@ -19,6 +19,17 @@
 export const parseNewick = (nwk) => {
   const ancestors = [];
   let tree = {};
+
+  /**
+   * This newick parser is known to have issues with quoted node names, as it
+   * will parse the node name content as newick. As a quick fix, disallow trees
+   * with quotes.
+   */
+  if (nwk.includes('"') || nwk.includes("'")) {
+    throw new Error("Auspice.us cannot currently parse Newick files with single or double quotes in them!")
+  }
+
+
   const tokens = nwk.split(/\s*(;|\(|\)|,|:)\s*/);
   for (let i=0; i<tokens.length; i++) {
     const token = tokens[i];
