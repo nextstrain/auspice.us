@@ -1,45 +1,55 @@
-import { parse as _parseNewick } from "newick-js";
+/**
+ * Newick format parser in JavaScript.
+ *
+ * Copyright (c) Jason Davies 2010.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ */
 
-const parseNewick = (nwk) => {
-  const {root, rootWeight, graph: [,edges]} = _parseNewick(nwk);
-  const edgesByParent = new Map();
+/* NOTE: parseNewick function slightly modified to produce an object better suited for Nextstrain. */
 
-  for (const [parent, child, weight] of edges) {
-    if (!edgesByParent.has(parent))
-      edgesByParent.set(parent, new Set());
-    edgesByParent.get(parent).add({child, weight});
-  }
-
-  const constructTree = (parent, weight) => {
-    const tree = {
-      // Particulars of this object are tied to getTreeStruct() below.
-      name: parent.label ?? "",
-      node_attrs: {
-        div: Number.isFinite(weight) ? weight : 0,
-      }
-    };
-
-    const childEdges = edgesByParent.get(parent);
-
-    if (childEdges?.size) {
-      tree.children = [];
-
-      for (const {child, weight} of childEdges) {
-        /* childEdges is reversed relative to the order given by the Newick input
-         * due to a side-effect of the parser's internals, so we unshift()
-         * instead of push() to restore the input order.
-         */
-        tree.children.unshift(
-          constructTree(child, weight)
-        );
-      }
+export const parseNewick = (nwk) => {
+  const ancestors = [];
+  let tree = {};
+  const tokens = nwk.split(/\s*(;|\(|\)|,|:)\s*/);
+  for (let i=0; i<tokens.length; i++) {
+    const token = tokens[i];
+    const subtree = {};
+    switch (token) {
+      case '(': // new child nodes up next
+        tree.children = [subtree];
+        ancestors.push(tree);
+        tree = subtree;
+        break;
+      case ',': // next node: another child of the last ancestor
+        ancestors[ancestors.length-1].children.push(subtree);
+        tree = subtree;
+        break;
+      case ')': // optional name next
+        tree = ancestors.pop();
+        break;
+      case ':': // optional length next
+        break;
+      default:
+        const x = tokens[i-1];
+        if (x === ')' || x === '(' || x === ',') {
+          tree.name = token;
+        } else if (x === ':') {
+          tree.node_attrs = {div: parseFloat(token)};
+        }
     }
-
-    return tree;
-  };
-
-  return constructTree(root, rootWeight);
+  }
+  return tree;
 };
+
 
 const getTreeStruct = (nwk) => {
   const tree = parseNewick(nwk);
