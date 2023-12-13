@@ -108,7 +108,16 @@ async function collectDatasets(dispatch, files) {
   /* loop through files and, if a sidecar, load it into the associated `Dataset` object */
   for (const file of files) {
     const nameLower = file.name.toLowerCase();
-    if (filesSeen.has(nameLower) || !nameLower.endsWith("json")) continue;
+    if (filesSeen.has(nameLower)) continue;
+
+    if (!nameLower.endsWith("json")) {
+      dispatch(errorNotification({
+        message: `Failed to load ${file.name}.`,
+        details: "Please refer to the homepage for supported files, and check that your file is named properly."
+      }));
+      continue;
+    }
+
     for (const [sidecarSuffix, sidecarPropName] of Object.entries(sidecarMappings)) {
       if (nameLower.endsWith(`_${sidecarSuffix}.json`)) { // filename looks like a sidecar file?
         filesSeen.add(nameLower);
@@ -125,7 +134,10 @@ async function collectDatasets(dispatch, files) {
           }
           logs.push(`Read ${file.name} as a sidecar file of ${datasets[mainNameLower].name}`);
         } else {
-          logs.push(`Sidecar file ${file.name} has no associated main dataset file and has been skipped.`);
+          dispatch(errorNotification({
+            message: `Failed to load ${file.name}.`,
+            details: "Does the file prefix match a corresponding dataset?"
+          }));
         }
       }
     }
