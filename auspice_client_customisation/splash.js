@@ -72,7 +72,7 @@ const SplashContent = (props) => {
             <li>A nextstrain narrative and associated datasets (JSONs) - see the
               <a href="https://docs.nextstrain.org/en/latest/tutorials/narratives-how-to-write.html"> Nextstrain docs </a>
               for how author a narrative. Each dataset the narrative references should have a filename which is the
-              <a href="https://en.wikipedia.org/wiki/URL"> URL path</a> but with forward slashes replaced with underscores ("/"→"_") and a ".json" suffix.
+              <a href="https://en.wikipedia.org/wiki/URL"> URL path</a> but with forward slashes replaced with underscores ("/"→"_") and a <Bold>.json</Bold> suffix.
               Only one narrative can be dropped on at a time!
             </li>
             <li>
