@@ -69,7 +69,7 @@ const SplashContent = (props) => {
               for how to run the bioinformatics tools to generate these datasets.
               Note that it's possible to drag on multiple datasets, however at most two will be loaded, and it's not possible to control the ordering of these datasets!
             </li>
-            <li>A nextstrain narrative and associated datasets (JSONs) - see the
+            <li>A nextstrain narrative ending in <Bold>.md</Bold> and associated datasets (JSONs) - see the
               <a href="https://docs.nextstrain.org/en/latest/tutorials/narratives-how-to-write.html"> Nextstrain docs </a>
               for how author a narrative. Each dataset the narrative references should have a filename which is the
               <a href="https://en.wikipedia.org/wiki/URL"> URL path</a> but with forward slashes replaced with underscores ("/"→"_") and a <Bold>.json</Bold> suffix.
@@ -77,7 +77,7 @@ const SplashContent = (props) => {
             </li>
             <li>
               A phylogenetic tree in
-              <a href="https://en.wikipedia.org/wiki/Newick_format"> Newick format</a>
+              <a href="https://en.wikipedia.org/wiki/Newick_format"> Newick format</a> with name ending in <Bold>.new</Bold>, <Bold>.nwk</Bold>, or <Bold>.newick</Bold>.
             </li>
             <li>
               Additional metadata as a CSV/TSV (drop this on once the tree has loaded).
