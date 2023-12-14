@@ -1,4 +1,4 @@
-import React from "react"; // eslint-disable-line
+import React from "react";
 import { handleDroppedFiles } from "./handleDroppedFiles";
 import { P, Bold, Title, NextstrainTitle, CenterContent, Line, GitHub } from './styles';
 import pkg from "../package.json";
