@@ -29,16 +29,6 @@ class SplashContent extends React.Component {
     handleDroppedFiles(this.props.dispatch, event.dataTransfer.files);
   }
 
-  datasetLink(path) {
-    return (
-      <div
-        style={{color: "#5097BA", textDecoration: "none", cursor: "pointer", fontWeight: "400", fontSize: "94%"}}
-        onClick={() => this.props.dispatch(this.props.changePage({path, push: true}))}
-      >
-        {path}
-      </div>
-    );
-  }
   render() {
     return (
       <div className="static container">
