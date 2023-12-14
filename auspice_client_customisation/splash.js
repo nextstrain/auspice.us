@@ -1,6 +1,6 @@
 import React from "react";
 import { handleDroppedFiles } from "./handleDroppedFiles";
-import { P, Bold, Title, CenterContent, Line, NextstrainTitle, GitHub } from './styles';
+import { P, Bold, Title, UploadBox, UploadButton, CenterContent, Line, NextstrainTitle, GitHub } from './styles';
 import pkg from "../package.json";
 
 
@@ -25,6 +25,11 @@ const SplashContent = (props) => {
     handleDroppedFiles(props.dispatch, event.dataTransfer.files);
   }
 
+  function handlePicked(event) {
+    event.preventDefault();
+    handleDroppedFiles(props.dispatch, event.target.files);
+  }
+
   return (
     <div className="static container">
 
@@ -45,7 +50,12 @@ const SplashContent = (props) => {
 
       <CenterContent>
         <Line/>
-          <h2 style={{color: "#30353f", fontSize: 24}}>{`Drag & Drop a dataset on here to view`}</h2>
+          <UploadBox>
+            <input type="file" multiple onChange={handlePicked} style={{display: "none"}} />
+            <h2 style={{color: "#30353f", fontSize: 24}}>{`Drag & Drop a dataset on here to view`}</h2>
+            <div style={{marginTop: "14px"}}></div>
+            <UploadButton>Select files</UploadButton>
+          </UploadBox>
         <Line/>
       </CenterContent>
 
