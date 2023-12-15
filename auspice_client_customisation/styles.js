@@ -1,4 +1,4 @@
-import React from "react"; // eslint-disable-line
+import React from "react";
 import styled from 'styled-components';
 const logoPNG = require("./nextstrain-logo-small.png");
 const gitHubLogo = require("./GitHub-Mark-32px.png");
