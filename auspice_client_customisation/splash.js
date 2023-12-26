@@ -1,6 +1,6 @@
 import React from "react";
 import { handleDroppedFiles } from "./handleDroppedFiles";
-import { P, Bold, Title, NextstrainTitle, CenterContent, Line, GitHub } from './styles';
+import { P, Bold, Title, CenterContent, Line, NextstrainTitle, GitHub } from './styles';
 import pkg from "../package.json";
 
 
@@ -59,11 +59,10 @@ class SplashContent extends React.Component {
         </CenterContent>
 
         <CenterContent>
-            <Line/>
-              <h2 style={{color: "#30353f", fontSize: 24}}>{`Drag & Drop a dataset on here to view`}</h2>
-            <Line/>
+          <Line/>
+            <h2 style={{color: "#30353f", fontSize: 24}}>{`Drag & Drop a dataset on here to view`}</h2>
+          <Line/>
         </CenterContent>
-
 
         <CenterContent>
           <P>
@@ -120,5 +119,3 @@ class SplashContent extends React.Component {
 }
 
 export default SplashContent;
-
-
