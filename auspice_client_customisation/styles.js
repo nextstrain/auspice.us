@@ -33,6 +33,19 @@ export const Bold = styled.span`
   font-weight: 500;
 `;
 
+export const UploadBox = styled.label`
+  cursor: pointer;
+  text-align: center;
+`;
+
+export const UploadButton = styled.span`
+  display: inline-block;
+  border-radius: 4px;
+  padding: 10px 20px;
+  color: white;
+  background-color: #63AC9A;
+`;
+
 
 export const CenterContent = (props) => (
   <div className="row">
