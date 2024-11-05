@@ -110,7 +110,7 @@ async function collectDatasets(dispatch, files) {
     const nameLower = file.name.toLowerCase();
     if (filesSeen.has(nameLower)) continue;
 
-    if (!nameLower.endsWith("json")) {
+    if (!nameLower.endsWith("json") && !nameLower.endsWith(".md")) {
       dispatch(errorNotification({
         message: `Failed to load ${file.name}.`,
         details: "Please refer to the homepage for supported files, and check that your file is named properly."
