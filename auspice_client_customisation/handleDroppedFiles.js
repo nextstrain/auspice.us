@@ -28,19 +28,32 @@ export const handleDroppedFiles = async (dispatch, files) => {
 function readFile(file) {
   return new Promise((resolve, reject) => {
     const fileReader = new window.FileReader();
-    fileReader.onloadend = function(e) {
-      if (file.name.toLowerCase().endsWith(".json")) {
-        const json = JSON.parse(e.target.result);
-        resolve(json);
+    fileReader.onloadend = async function(e) {
+      let data;
+      if (file.name.toLowerCase().endsWith(".json.gz")) {
+        data = JSON.parse(await decompressGzipStream(file.stream()));
+      } else if (file.name.toLowerCase().endsWith(".json")) {
+        data = JSON.parse(e.target.result);
       } else {
-        resolve(e.target.result);
+        data = e.target.result;
       }
+      resolve(data);
     };
     fileReader.onerror = function(e) {
       reject(e);
     };
     fileReader.readAsText(file);
   });
+}
+
+/**
+ * Decompress a gzip stream using the Compression Streams API.
+ * Adapted from https://stackoverflow.com/a/68829631
+ */
+async function decompressGzipStream(stream) {
+  let ds = new DecompressionStream("gzip");
+  let decompressedStream = stream.pipeThrough(ds);
+  return await new Response(decompressedStream).text();
 }
 
 /**
@@ -58,7 +71,7 @@ function getDatasetName(filename, sidecarSuffix="") {
   }
 
   datasetName = datasetName
-    .slice(0, -5) // removes ".json" suffix
+    .slice(0, datasetName.indexOf('.json')) // removes everything after and including ".json"
     .replaceAll("_", "/"); // nextstrain-like file path display
 
   return datasetName;
@@ -80,10 +93,11 @@ async function collectDatasets(dispatch, files) {
     measurements: "measurements",
     "root-sequence": "rootSequence"
   };
+  const jsonFileTypes = [".json", ".json.gz"];
   const newickFileTypes = ["new", "nwk", "newick"];
   const isMain = (f) => (
-    f.name.toLowerCase().endsWith("json") &&
-    Object.keys(sidecarMappings).every((suffix) => !f.name.toLowerCase().endsWith(`_${suffix}.json`))
+    jsonFileTypes.some(ext => f.name.toLowerCase().endsWith(ext)) &&
+    Object.keys(sidecarMappings).every((suffix) => !jsonFileTypes.some(ext => f.name.toLowerCase().endsWith(`_${suffix}${ext}`)))
   );
   const filesSeen = new Set(); // lowercase names of files we have read (successfully or otherwise)
   const logs = [];
@@ -129,7 +143,7 @@ async function collectDatasets(dispatch, files) {
     const nameLower = file.name.toLowerCase();
     if (filesSeen.has(nameLower)) continue;
 
-    if (!nameLower.endsWith("json") && !nameLower.endsWith(".md")) {
+    if (!jsonFileTypes.some(ext => nameLower.endsWith(ext)) && !nameLower.endsWith(".md")) {
       dispatch(errorNotification({
         message: `Failed to load ${file.name}.`,
         details: "Please refer to the homepage for supported files, and check that your file is named properly."
@@ -138,7 +152,7 @@ async function collectDatasets(dispatch, files) {
     }
 
     for (const [sidecarSuffix, sidecarPropName] of Object.entries(sidecarMappings)) {
-      if (nameLower.endsWith(`_${sidecarSuffix}.json`)) { // filename looks like a sidecar file?
+      if (jsonFileTypes.some(ext => nameLower.endsWith(`_${sidecarSuffix}${ext}`))) { // filename looks like a sidecar file?
         filesSeen.add(nameLower);
         const datasetName = getDatasetName(nameLower, sidecarSuffix);
         if (datasets[datasetName]) {
