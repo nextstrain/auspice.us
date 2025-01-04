@@ -25,11 +25,11 @@ export const handleDroppedFiles = async (dispatch, files) => {
  * async functions via `await readFile(file)`.
  * Adapted from https://stackoverflow.com/a/51026615
  */
-function readFile(file, isJSON=true) {
+function readFile(file) {
   return new Promise((resolve, reject) => {
     const fileReader = new window.FileReader();
     fileReader.onloadend = function(e) {
-      if (isJSON) {
+      if (file.name.toLowerCase().endsWith(".json")) {
         const json = JSON.parse(e.target.result);
         resolve(json);
       } else {
@@ -88,7 +88,7 @@ async function collectDatasets(dispatch, files) {
       try {
         const d = new Dataset(file.name);
         d.apiCalls = {}; // ensures no prototypes mistakenly make api calls
-        d.main = newickToAuspiceJson(file.name, await readFile(file, false));
+        d.main = newickToAuspiceJson(file.name, await readFile(file));
         datasets[nameLower] = d;
         logs.push(`Read ${file.name} as a newick file`);
       } catch (e) {
@@ -141,7 +141,7 @@ async function collectDatasets(dispatch, files) {
     if (nameLower.endsWith(".md")) {
       filesSeen.add(nameLower);
       logs.push(`Read ${file.name} as a narrative.`);
-      ({datasets, narrative} = await parseNarrative(await readFile(file, false), datasets, logs));
+      ({datasets, narrative} = await parseNarrative(await readFile(file), datasets, logs));
       break; // don't consider multiple markdown files
     }
   }
