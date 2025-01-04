@@ -67,7 +67,7 @@ const SplashContent = (props) => {
             <li>Auspice datasets (a main JSON plus any sidecars). See the
               <a href="https://nextstrain.org/docs/bioinformatics/introduction-to-augur"> Nextstrain docs </a>
               for how to run the bioinformatics tools to generate these datasets.
-              Note that it's possible to drag on multiple datasets, however at most two will be loaded, and it's not possible to control the ordering of these datasets!
+              Note that it's possible to drag on multiple datasets, however at most two will be loaded, and it's not possible to control the ordering of these datasets! Each JSON file can be uncompressed (<Bold>.json</Bold>) or gzip-compressed (<Bold>.json.gz</Bold>)
             </li>
             <li>A nextstrain narrative ending in <Bold>.md</Bold> and associated datasets (JSONs) - see the
               <a href="https://docs.nextstrain.org/en/latest/tutorials/narratives-how-to-write.html"> Nextstrain docs </a>
