@@ -22,7 +22,7 @@ export const handleDroppedFiles = async (dispatch, files) => {
 };
 
 /** promisify FileReader's readAsText() so we can use it within
- * async functions via `await readJson(file)`.
+ * async functions via `await readFile(file)`.
  * Adapted from https://stackoverflow.com/a/51026615
  */
 function readFile(file, isJSON=true) {
