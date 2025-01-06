@@ -22,25 +22,59 @@ export const handleDroppedFiles = async (dispatch, files) => {
 };
 
 /** promisify FileReader's readAsText() so we can use it within
- * async functions via `await readJson(file)`.
+ * async functions via `await readFile(file)`.
  * Adapted from https://stackoverflow.com/a/51026615
  */
-function readFile(file, isJSON=true) {
+function readFile(file) {
   return new Promise((resolve, reject) => {
     const fileReader = new window.FileReader();
-    fileReader.onloadend = function(e) {
-      if (isJSON) {
-        const json = JSON.parse(e.target.result);
-        resolve(json);
+    fileReader.onloadend = async function(e) {
+      let data;
+      if (file.name.toLowerCase().endsWith(".json.gz")) {
+        data = JSON.parse(await decompressGzipStream(file.stream()));
+      } else if (file.name.toLowerCase().endsWith(".json")) {
+        data = JSON.parse(e.target.result);
       } else {
-        resolve(e.target.result);
+        data = e.target.result;
       }
+      resolve(data);
     };
     fileReader.onerror = function(e) {
       reject(e);
     };
     fileReader.readAsText(file);
   });
+}
+
+/**
+ * Decompress a gzip stream using the Compression Streams API.
+ * Adapted from https://stackoverflow.com/a/68829631
+ */
+async function decompressGzipStream(stream) {
+  let ds = new DecompressionStream("gzip");
+  let decompressedStream = stream.pipeThrough(ds);
+  return await new Response(decompressedStream).text();
+}
+
+/**
+ * Determine the dataset name from an Auspice JSON file.
+ * @param {string} filename 
+ * @param {string} sidecarSuffix For sidecar files
+ * @returns 
+ */
+function getDatasetName(filename, sidecarSuffix="") {
+  let datasetName = filename.toLowerCase();
+
+  // Dataset name of sidecar files is the filename without sidecar suffix (removed here) and file extension (removed later).
+  if (sidecarSuffix) {
+    datasetName = datasetName.replace(`_${sidecarSuffix}`, "");
+  }
+
+  datasetName = datasetName
+    .slice(0, datasetName.indexOf('.json')) // removes everything after and including ".json"
+    .replaceAll("_", "/"); // nextstrain-like file path display
+
+  return datasetName;
 }
 
 /**
@@ -59,10 +93,11 @@ async function collectDatasets(dispatch, files) {
     measurements: "measurements",
     "root-sequence": "rootSequence"
   };
+  const jsonFileTypes = [".json", ".json.gz"];
   const newickFileTypes = ["new", "nwk", "newick"];
   const isMain = (f) => (
-    f.name.toLowerCase().endsWith("json") &&
-    Object.keys(sidecarMappings).every((suffix) => !f.name.toLowerCase().endsWith(`_${suffix}.json`))
+    jsonFileTypes.some(ext => f.name.toLowerCase().endsWith(ext)) &&
+    Object.keys(sidecarMappings).every((suffix) => !jsonFileTypes.some(ext => f.name.toLowerCase().endsWith(`_${suffix}${ext}`)))
   );
   const filesSeen = new Set(); // lowercase names of files we have read (successfully or otherwise)
   const logs = [];
@@ -73,12 +108,11 @@ async function collectDatasets(dispatch, files) {
     if (isMain(file)) {
       filesSeen.add(nameLower);
       try {
-        const name = file.name.slice(0, -5) // removes ".json" suffix
-          .replaceAll("_", "/"); // nextstrain-like file path display
+        const name = getDatasetName(file.name);
         const d = new Dataset(name);
         d.apiCalls = {}; // ensures no prototypes mistakenly make api calls
         d.main = await readFile(file);
-        datasets[nameLower] = d;
+        datasets[name] = d;
         logs.push(`Read ${file.name} as a main dataset JSON file`);
       } catch (e) {
         console.error(`${file.name} failed to be read as a main dataset JSON file. Error: ${e}`);
@@ -88,7 +122,7 @@ async function collectDatasets(dispatch, files) {
       try {
         const d = new Dataset(file.name);
         d.apiCalls = {}; // ensures no prototypes mistakenly make api calls
-        d.main = newickToAuspiceJson(file.name, await readFile(file, false));
+        d.main = newickToAuspiceJson(file.name, await readFile(file));
         datasets[nameLower] = d;
         logs.push(`Read ${file.name} as a newick file`);
       } catch (e) {
@@ -109,7 +143,7 @@ async function collectDatasets(dispatch, files) {
     const nameLower = file.name.toLowerCase();
     if (filesSeen.has(nameLower)) continue;
 
-    if (!nameLower.endsWith("json") && !nameLower.endsWith(".md")) {
+    if (!jsonFileTypes.some(ext => nameLower.endsWith(ext)) && !nameLower.endsWith(".md")) {
       dispatch(errorNotification({
         message: `Failed to load ${file.name}.`,
         details: "Please refer to the homepage for supported files, and check that your file is named properly."
@@ -118,12 +152,12 @@ async function collectDatasets(dispatch, files) {
     }
 
     for (const [sidecarSuffix, sidecarPropName] of Object.entries(sidecarMappings)) {
-      if (nameLower.endsWith(`_${sidecarSuffix}.json`)) { // filename looks like a sidecar file?
+      if (jsonFileTypes.some(ext => nameLower.endsWith(`_${sidecarSuffix}${ext}`))) { // filename looks like a sidecar file?
         filesSeen.add(nameLower);
-        const mainNameLower = nameLower.replace(`_${sidecarSuffix}.json`, '.json');
-        if (datasets[mainNameLower]) {
-          datasets[mainNameLower][sidecarPropName] = readFile(file);
-          logs.push(`Read ${file.name} as a sidecar file of ${datasets[mainNameLower].name}`);
+        const datasetName = getDatasetName(nameLower, sidecarSuffix);
+        if (datasets[datasetName]) {
+          datasets[datasetName][sidecarPropName] = readFile(file);
+          logs.push(`Read ${file.name} as a sidecar file of ${datasets[datasetName].name}`);
         } else {
           dispatch(errorNotification({
             message: `Failed to load ${file.name}.`,
@@ -141,7 +175,7 @@ async function collectDatasets(dispatch, files) {
     if (nameLower.endsWith(".md")) {
       filesSeen.add(nameLower);
       logs.push(`Read ${file.name} as a narrative.`);
-      ({datasets, narrative} = await parseNarrative(await readFile(file, false), datasets, logs));
+      ({datasets, narrative} = await parseNarrative(await readFile(file), datasets, logs));
       break; // don't consider multiple markdown files
     }
   }
