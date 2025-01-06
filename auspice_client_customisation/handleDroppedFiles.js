@@ -44,6 +44,27 @@ function readFile(file) {
 }
 
 /**
+ * Determine the dataset name from an Auspice JSON file.
+ * @param {string} filename 
+ * @param {string} sidecarSuffix For sidecar files
+ * @returns 
+ */
+function getDatasetName(filename, sidecarSuffix="") {
+  let datasetName = filename.toLowerCase();
+
+  // Dataset name of sidecar files is the filename without sidecar suffix (removed here) and file extension (removed later).
+  if (sidecarSuffix) {
+    datasetName = datasetName.replace(`_${sidecarSuffix}`, "");
+  }
+
+  datasetName = datasetName
+    .slice(0, -5) // removes ".json" suffix
+    .replaceAll("_", "/"); // nextstrain-like file path display
+
+  return datasetName;
+}
+
+/**
  * Parse the dropped files into a collection of `Dataset` objects, which is the structure
  * Auspice uses to represent a "main" dataset JSON + any associated sidecar files.
  * If the dropped file is newick then we convert that to JSON-like structure.
@@ -73,12 +94,11 @@ async function collectDatasets(dispatch, files) {
     if (isMain(file)) {
       filesSeen.add(nameLower);
       try {
-        const name = file.name.slice(0, -5) // removes ".json" suffix
-          .replaceAll("_", "/"); // nextstrain-like file path display
+        const name = getDatasetName(file.name);
         const d = new Dataset(name);
         d.apiCalls = {}; // ensures no prototypes mistakenly make api calls
         d.main = await readFile(file);
-        datasets[nameLower] = d;
+        datasets[name] = d;
         logs.push(`Read ${file.name} as a main dataset JSON file`);
       } catch (e) {
         console.error(`${file.name} failed to be read as a main dataset JSON file. Error: ${e}`);
@@ -120,10 +140,10 @@ async function collectDatasets(dispatch, files) {
     for (const [sidecarSuffix, sidecarPropName] of Object.entries(sidecarMappings)) {
       if (nameLower.endsWith(`_${sidecarSuffix}.json`)) { // filename looks like a sidecar file?
         filesSeen.add(nameLower);
-        const mainNameLower = nameLower.replace(`_${sidecarSuffix}.json`, '.json');
-        if (datasets[mainNameLower]) {
-          datasets[mainNameLower][sidecarPropName] = readFile(file);
-          logs.push(`Read ${file.name} as a sidecar file of ${datasets[mainNameLower].name}`);
+        const datasetName = getDatasetName(nameLower, sidecarSuffix);
+        if (datasets[datasetName]) {
+          datasets[datasetName][sidecarPropName] = readFile(file);
+          logs.push(`Read ${file.name} as a sidecar file of ${datasets[datasetName].name}`);
         } else {
           dispatch(errorNotification({
             message: `Failed to load ${file.name}.`,
