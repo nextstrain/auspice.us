@@ -14,7 +14,7 @@
     "develop": "auspice develop --verbose --extend ./auspice_client_customisation/config.json --handlers ./server/handlers.js"
   },
   "dependencies": {
-    "auspice": "2.63.0",
+    "auspice": "github:nextstrain/auspice#f71c3b5f857d54eb1fd6af76281ad1a8c81be29e",
     "heroku-ssl-redirect": "0.0.4"
   }
 }
