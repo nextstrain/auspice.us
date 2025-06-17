@@ -2,3 +2,5 @@
 /node_modules/
 # main entrypoint index.html created by auspice (npm run build)
 /index.html
+# local folder for testing datasets
+/data/

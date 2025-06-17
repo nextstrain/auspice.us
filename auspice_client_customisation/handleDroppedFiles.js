@@ -12,39 +12,42 @@ doesn't officially expose these functions */
 export const handleDroppedFiles = async (dispatch, files) => {
   const {datasets, narrative} = await collectDatasets(dispatch, files);
   if (Object.values(datasets).length===0) {
-    return dispatch(errorNotification({
-      message: `auspice.us couldn't load any of the dropped files!`,
-      details: `Please consider making a GitHub issue for this to help us improve auspice.us. See the browser console for more details.`
-    }));
+    return narrative ?
+      dispatch(errorNotification({
+        message: `auspice.us couldn't load the narrative!`,
+        details: `None of the referenced datasets were provided.`
+      })) :
+      dispatch(errorNotification({
+        message: `auspice.us couldn't load any of the dropped files!`,
+        details: `Please consider making a GitHub issue for this to help us improve auspice.us. See the browser console for more details.`
+      }));
   }
   await loadDatasets(dispatch, datasets, narrative);
   return;
 };
 
-/** promisify FileReader's readAsText() so we can use it within
- * async functions via `await readFile(file)`.
- * Adapted from https://stackoverflow.com/a/51026615
- */
-function readFile(file) {
-  return new Promise((resolve, reject) => {
-    const fileReader = new window.FileReader();
-    fileReader.onloadend = async function(e) {
-      let data;
-      if (file.name.toLowerCase().endsWith(".json.gz")) {
-        data = JSON.parse(await decompressGzipStream(file.stream()));
-      } else if (file.name.toLowerCase().endsWith(".json")) {
-        data = JSON.parse(e.target.result);
-      } else {
-        data = e.target.result;
-      }
-      resolve(data);
-    };
-    fileReader.onerror = function(e) {
-      reject(e);
-    };
-    fileReader.readAsText(file);
-  });
-}
+
+/* CONSTANTS */
+const JSON_SUFFIXES = [".json", ".auspicejson"];
+const NARRATIVE_SUFFIXES = [".md"];
+const SIDECAR_SUFFIXES = { // suffix -> property (on `Dataset` object)
+  "_tip-frequencies":  "tipFrequencies",
+  _measurements: "measurements",
+  "_root-sequence": "rootSequence"
+};
+const NEWICK_SUFFIXES = ["new", "nwk", "newick"];
+const COMPRESSIONS = {
+  ".gz": async (file) => decompressGzipStream(file.stream()),
+  ".gzip": async (file) => decompressGzipStream(file.stream()),
+};
+const FILE_TYPES = {
+  MAIN: 'MAIN',
+  SIDECAR: 'SIDECAR',
+  NEWICK: 'NEWICK',
+  NARRATIVE: 'NARRATIVE',
+  AUSPICE_DRAG_DROP: 'AUSPICE_DRAG_DROP',
+};
+
 
 /**
  * Decompress a gzip stream using the Compression Streams API.
@@ -57,135 +60,70 @@ async function decompressGzipStream(stream) {
 }
 
 /**
- * Determine the dataset name from an Auspice JSON file.
- * @param {string} filename 
- * @param {string} sidecarSuffix For sidecar files
- * @returns 
- */
-function getDatasetName(filename, sidecarSuffix="") {
-  let datasetName = filename.toLowerCase();
-
-  // Dataset name of sidecar files is the filename without sidecar suffix (removed here) and file extension (removed later).
-  if (sidecarSuffix) {
-    datasetName = datasetName.replace(`_${sidecarSuffix}`, "");
-  }
-
-  datasetName = datasetName
-    .slice(0, datasetName.indexOf('.json')) // removes everything after and including ".json"
-    .replaceAll("_", "/"); // nextstrain-like file path display
-
-  return datasetName;
-}
-
-/**
- * Parse the dropped files into a collection of `Dataset` objects, which is the structure
+ * Parse the dropped files into a list of `Dataset` objects, which is the structure
  * Auspice uses to represent a "main" dataset JSON + any associated sidecar files.
- * If the dropped file is newick then we convert that to JSON-like structure.
- *
- * This function currently only returns a single Dataset with sidecars, as applicable.
- * @param {*} files
- * @returns
+ * If the dropped file is newick then we convert that to JSON-like structure and
+ * likewise instantiate a `Dataset` object.
+ * 
+ * 
  */
 async function collectDatasets(dispatch, files) {
-  let datasets = {};
-  const sidecarMappings = { // suffix -> property (on `Dataset` object)
-    "tip-frequencies":  "tipFrequencies",
-    measurements: "measurements",
-    "root-sequence": "rootSequence"
-  };
-  const jsonFileTypes = [".json", ".json.gz"];
-  const newickFileTypes = ["new", "nwk", "newick"];
-  const isMain = (f) => (
-    jsonFileTypes.some((ext) => f.name.toLowerCase().endsWith(ext)) &&
-    Object.keys(sidecarMappings).every((suffix) => !jsonFileTypes.some((ext) => f.name.toLowerCase().endsWith(`_${suffix}${ext}`)))
-  );
-  const filesSeen = new Set(); // lowercase names of files we have read (successfully or otherwise)
+  const droppedFiles = Array.from(files).map(makeDroppedFile);
+  const datasets = {};
   const logs = [];
 
-  /* first loop through files to read main-dataset JSONs and tree-like files (newick etc) */
-  for (const file of files) {
-    const nameLower = file.name.toLowerCase();
-    if (isMain(file)) {
-      filesSeen.add(nameLower);
-      try {
-        const name = getDatasetName(file.name);
-        const d = new Dataset(name);
-        d.apiCalls = {}; // ensures no prototypes mistakenly make api calls
-        d.main = await readFile(file);
-        datasets[name] = d;
-        logs.push(`Read ${file.name} as a main dataset JSON file`);
-      } catch (e) {
-        console.error(`${file.name} failed to be read as a main dataset JSON file. Error: ${e}`);
-      }
-    } else if (newickFileTypes.some((suffix) => nameLower.endsWith(suffix))) {
-      filesSeen.add(nameLower);
-      try {
-        const d = new Dataset(file.name);
-        d.apiCalls = {}; // ensures no prototypes mistakenly make api calls
-        d.main = newickToAuspiceJson(file.name, await readFile(file));
-        datasets[nameLower] = d;
-        logs.push(`Read ${file.name} as a newick file`);
-      } catch (e) {
-        console.error(`${file.name} failed to be read as a newick tree. Error: ${e}`);
-      }
-    } else if (isAuspiceAcceptedFileType(file)) {
-      filesSeen.add(nameLower);
-      logs.push(`${file.name} is a metadata file and should be dropped onto the tree not the splash page`);
-      dispatch(warningNotification({
-        message: "Failed to parse additional metadata file!",
-        details: "Please drop the metadata file after the tree has loaded."
-      }));
+  /* Parse any files which will be treated as the main dataset (JSON or NEWICK) */
+  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.MAIN || d.type===FILE_TYPES.NEWICK)) {
+    const nwk = droppedFile.type===FILE_TYPES.NEWICK;
+    try {
+      const contents = await droppedFile.readFile();
+      datasets[droppedFile.urlName] = new Dataset(droppedFile.urlName);
+      datasets[droppedFile.urlName].apiCalls = {}; // ensures no prototypes mistakenly make api calls
+      datasets[droppedFile.urlName].main = nwk ? newickToAuspiceJson(droppedFile.urlName, contents) : contents;
+      await droppedFile.readFile();
+      logs.push(`Read ${droppedFile.file.name} as a main dataset ${nwk?'Newick':'JSON'} file under name ${droppedFile.urlName}`);
+    } catch (e) {
+      console.error(`${droppedFile.file.name} failed to be read as a main dataset ${nwk?'Newick':'JSON'} file. Error: ${e}`);
     }
   }
 
-  /* loop through files and, if a sidecar, load it into the associated `Dataset` object */
-  for (const file of files) {
-    const nameLower = file.name.toLowerCase();
-    if (filesSeen.has(nameLower)) continue;
-
-    if (!jsonFileTypes.some((ext) => nameLower.endsWith(ext)) && !nameLower.endsWith(".md")) {
+  /**
+   * For every sidecar file link it to the associated `Dataset` object
+   * (For this to work we must have first parsed all main JSON dataset files)
+   */
+  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.SIDECAR)) {
+    const associatedDataset = datasets[droppedFile.urlName];
+    if (associatedDataset) {
+      associatedDataset[droppedFile.sidecarPropName] = droppedFile.readFile(); // unresolved promise
+      logs.push(`Read ${droppedFile.file.name} as a sidecar file (dataset: ${droppedFile.urlName})`);
+    } else {
       dispatch(errorNotification({
-        message: `Failed to load ${file.name}.`,
-        details: "Please refer to the homepage for supported files, and check that your file is named properly."
+        message: `Failed to load sidecar file ${droppedFile.file.name}.`,
+        details: "Does the file prefix match a corresponding dataset?"
       }));
-      continue;
-    }
-
-    for (const [sidecarSuffix, sidecarPropName] of Object.entries(sidecarMappings)) {
-      if (jsonFileTypes.some((ext) => nameLower.endsWith(`_${sidecarSuffix}${ext}`))) { // filename looks like a sidecar file?
-        filesSeen.add(nameLower);
-        const datasetName = getDatasetName(nameLower, sidecarSuffix);
-        if (datasets[datasetName]) {
-          datasets[datasetName][sidecarPropName] = readFile(file);
-          logs.push(`Read ${file.name} as a sidecar file of ${datasets[datasetName].name}`);
-        } else {
-          dispatch(errorNotification({
-            message: `Failed to load ${file.name}.`,
-            details: "Does the file prefix match a corresponding dataset?"
-          }));
-        }
-      }
     }
   }
 
   /* finally, load any markdown files as a narrative (after all datasets have been created) */
   let narrative;
-  for (const file of files) {
-    const nameLower = file.name.toLowerCase();
-    if (nameLower.endsWith(".md")) {
-      filesSeen.add(nameLower);
-      logs.push(`Read ${file.name} as a narrative.`);
-      ({datasets, narrative} = await parseNarrative(await readFile(file), datasets, logs));
-      break; // don't consider multiple markdown files
-    }
+  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.NARRATIVE)) {
+    logs.push(`Reading narrative file ${droppedFile.file.name}...`);
+    narrative = await parseNarrative(await droppedFile.readFile(), datasets, logs);
+    break; // don't consider multiple markdown files
   }
 
+  /* Dispatch warnings for files which should be dragged onto the Auspice viz instead */
+  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.AUSPICE_DRAG_DROP)) {
+    logs.push(`${droppedFile.file.name} is a metadata file and should be dropped onto the tree not the splash page`);
+    dispatch(warningNotification({
+      message: "Failed to parse additional metadata file!",
+      details: "Please drop the metadata file after the tree has loaded."
+    }));
+  }
 
-  /* are there any files we haven't (attempted to) read? */
-  for (const file of files) {
-    if (!filesSeen.has(file.name.toLowerCase())) {
-      logs.push(`Unparsed file: ${file.name}`);
-    }
+  /* are there any files we don't know what to do with? */
+  for (const droppedFile of droppedFiles.filter((d) => d.type===undefined)) {
+    logs.push(`Unparsed file: ${droppedFile.file.name}`);
   }
 
   console.log(logs.join("\n"))
@@ -207,7 +145,7 @@ async function loadDatasets(dispatch, datasets, narrative) {
     dataset1 = datasets[a];
     dataset2 = datasets[b];
     if (!dataset1) {
-      console.error(`Narrative starting dataset(s): ${a}, ${b}\nExpected dataset filenames: ${convertPrefixToDatasetFilename(a)}, ${convertPrefixToDatasetFilename(b)}`)
+      console.error(`Narrative opening slide requires a dataset for ${a} but this is not provided`)
       return dispatch(errorNotification({
         message: "Could not find the starting datasets for the narrative",
         details: "Please see the browser console for more details."
@@ -265,42 +203,122 @@ async function loadDatasets(dispatch, datasets, narrative) {
  * dataset to load (if present in the drag & dropped files).
  */
 async function parseNarrative(fileText, datasets, logs) {
-  const datasetsForNarrative = {};
-  const blocks = await parseMarkdownNarrativeFile(fileText, parseMarkdown);
-  addEndOfNarrativeBlock(blocks)
+  const slides = await parseMarkdownNarrativeFile(fileText, parseMarkdown);
+  addEndOfNarrativeBlock(slides)
 
-  /* link each "block" to a dataset. This is not straightforward, as narrative slides
-  are linked to a URL not a filepath. Auspice uses the function `getDatasetNamesFromUrl` to
-  perform this linking and expects the appropriate dataset to be present in the cache.
-  We therefore modify `datasets` so that these keys exist */
-  logs.push("Linking narrative datasets to dropped JSON datasets.")
-  const prefixesSeen = new Set();
-  for (const block of blocks) {
-    for (const prefix of getDatasetNamesFromUrl(block.dataset)) {
-      if (prefix && !prefixesSeen.has(prefix)) {
-        const filename = convertPrefixToDatasetFilename(prefix);
-        // Must use lowercase filename to find dataset since the datasets
-        // are stored in lowercase within collectDatasets
-        const filenameLower = filename.toLowerCase();
-        if (datasets[filenameLower]) {
-          logs.push(`Narrative slide URL ${prefix} → ${filename}`)
-          datasetsForNarrative[prefix] = datasets[filenameLower];
-        } else {
-          logs.push(`Narrative slide URL ${prefix} expected ${filename} but this wasn't found.`)
-        }
-      }
-      prefixesSeen.add(prefix)
+  /**
+   * Each narrative slide specifies a dataset (referenced elsewhere as the 'urlName'
+   * which is the keys of `datasets`)
+   */
+  const referencedUrlNames = Array.from(new Set(
+    slides.map((slide) => getDatasetNamesFromUrl(slide.dataset)).flat()
+  )).filter((name) => !!name);
+
+  /* Delete any keys from `datasets` that aren't needed for this narrative */
+  for (const name of Array.from(Object.keys(datasets))) {
+    if (!referencedUrlNames.includes(name)) {
+      logs.push(`\tDropping dataset for ${name} as it's not referenced in the narrative`);
+      delete datasets[name]
     }
   }
-  return {narrative: blocks, datasets: datasetsForNarrative};
+
+  const missingDatasets = referencedUrlNames.filter((name) => !datasets[name]);
+  for (const name of missingDatasets) {
+    logs.push(`\tNarrative references dataset for ${name} but this wasn't provided. Expect errors!`);
+  }
+  if (missingDatasets.length===0) {
+    logs.push(`\tAll ${referencedUrlNames.length} datasets referenced are present`);
+  }
+
+  return slides;
 }
 
-/**
- * Prefix here is used the context of auspice, whereby an auspice API
- * request would include the `?prefix={prefix}` query. We scan the
- * datasets of dropped files and try to find a match for each prefix.
- */
-function convertPrefixToDatasetFilename(prefix) {
-  if (!prefix) return undefined;
-  return prefix.replaceAll("/", "_") + ".json";
+function makeDroppedFile(file) {
+  const filename = file.name;
+  const filenameLower = filename.toLowerCase();
+  let filenameBase = filenameLower;
+  let type = undefined; // default state is undefined
+  let sidecarPropName = undefined;
+  let decompressCallback = false;
+
+  /* Check for compression suffixes & if so store the decompression callback */
+  for (const [suffix, callback] of Object.entries(COMPRESSIONS)) {
+    if (filenameBase.endsWith(suffix)) {
+      decompressCallback = callback;
+      filenameBase = filenameBase.slice(0, filenameBase.length - suffix.length);
+      break;
+    }
+  }
+
+  /* check if it looks like a (main or sidecar) JSON */
+  for (const suffix of JSON_SUFFIXES) {
+    if (filenameBase.endsWith(suffix)) {
+      filenameBase = filenameBase.slice(0, filenameBase.length - suffix.length);
+      for (const sidecarSuffix of Object.keys(SIDECAR_SUFFIXES)) {
+        if (filenameBase.endsWith(sidecarSuffix)) {
+          sidecarPropName = SIDECAR_SUFFIXES[sidecarSuffix];
+          filenameBase = filenameBase.slice(0, filenameBase.length - sidecarSuffix.length);
+          break; // the inner for-loop (sidecars)
+        }
+      }
+      type = sidecarPropName ? FILE_TYPES.SIDECAR : FILE_TYPES.MAIN;
+      break;
+    }
+  }
+
+  /* Check if it looks like a narrative */
+  if (!type) {
+    for (const suffix of NARRATIVE_SUFFIXES) {
+      if (filenameBase.endsWith(suffix)) {
+        type = FILE_TYPES.NARRATIVE;
+        filenameBase = filenameBase.slice(0, filenameBase.length - suffix.length);
+        break;
+      }
+    }
+  }
+
+  /* Check if it looks like a newick file */
+  if (!type) {
+    for (const suffix of NEWICK_SUFFIXES) {
+      if (filenameBase.endsWith(suffix)) {
+        type = FILE_TYPES.NEWICK;
+        filenameBase = filenameBase.slice(0, filenameBase.length - suffix.length);
+        break;
+      }
+    }
+  }
+
+  /* convert the basename (if there is one!) to nextstrain-like URL display */
+  const urlName = filenameBase ? filenameBase.replaceAll("_", "/") : undefined;
+
+  /* Finally, check if the file is handle-able by Auspice itself */
+  if (!type && isAuspiceAcceptedFileType(file)) {
+    type = FILE_TYPES.AUSPICE_DRAG_DROP;
+  }
+
+  /** promisify FileReader's readAsText() so we can use it within
+  * async functions via `await readFile(file)`.
+  * Adapted from https://stackoverflow.com/a/51026615
+  */
+  function readFile() {
+    return new Promise((resolve, reject) => {
+      const fileReader = new window.FileReader();
+      fileReader.onloadend = async function(e) {
+        const text = decompressCallback ?
+          (await decompressCallback(file)) :
+          e.target.result;
+        if (type===FILE_TYPES.MAIN || type===FILE_TYPES.SIDECAR) {
+          resolve(JSON.parse(text));
+        } else {
+          resolve(text);
+        }
+      };
+      fileReader.onerror = function(e) {
+        reject(e);
+      };
+      fileReader.readAsText(file);
+    });
+  }
+
+  return {file, urlName, type, sidecarPropName, readFile};
 }
