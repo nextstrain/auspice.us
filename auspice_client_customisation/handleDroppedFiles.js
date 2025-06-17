@@ -49,31 +49,6 @@ const FILE_TYPES = {
 };
 
 
-/** promisify FileReader's readAsText() so we can use it within
- * async functions via `await readFile(file)`.
- * Adapted from https://stackoverflow.com/a/51026615
- */
-function readFile(details) {
-  return new Promise((resolve, reject) => {
-    const fileReader = new window.FileReader();
-    fileReader.onloadend = async function(e) {
-      const text = details.decompressCallback ?
-        (await details.decompressCallback(details.file)) :
-        e.target.result;
-      if (details.type===FILE_TYPES.MAIN || details.type===FILE_TYPES.SIDECAR) {
-        resolve(JSON.parse(text));
-      } else {
-        resolve(text);
-      }
-    };
-    fileReader.onerror = function(e) {
-      reject(e);
-    };
-    fileReader.readAsText(details.file);
-  });
-}
-
-
 /**
  * Decompress a gzip stream using the Compression Streams API.
  * Adapted from https://stackoverflow.com/a/68829631
@@ -93,22 +68,22 @@ async function decompressGzipStream(stream) {
  * 
  */
 async function collectDatasets(dispatch, files) {
-  const fileDetails = Array.from(files).map(_fileDetails);
+  const droppedFiles = Array.from(files).map(makeDroppedFile);
   const datasets = {};
   const logs = [];
 
   /* Parse any files which will be treated as the main dataset (JSON or NEWICK) */
-  for (const details of fileDetails.filter((d) => d.type===FILE_TYPES.MAIN || d.type===FILE_TYPES.NEWICK)) {
-    const nwk = details.type===FILE_TYPES.NEWICK;
+  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.MAIN || d.type===FILE_TYPES.NEWICK)) {
+    const nwk = droppedFile.type===FILE_TYPES.NEWICK;
     try {
-      const contents = await readFile(details);
-      datasets[details.urlName] = new Dataset(details.urlName);
-      datasets[details.urlName].apiCalls = {}; // ensures no prototypes mistakenly make api calls
-      datasets[details.urlName].main = nwk ? newickToAuspiceJson(details.urlName, contents) : contents;
-      await readFile(details);
-      logs.push(`Read ${details.file.name} as a main dataset ${nwk?'Newick':'JSON'} file under name ${details.urlName}`);
+      const contents = await droppedFile.readFile();
+      datasets[droppedFile.urlName] = new Dataset(droppedFile.urlName);
+      datasets[droppedFile.urlName].apiCalls = {}; // ensures no prototypes mistakenly make api calls
+      datasets[droppedFile.urlName].main = nwk ? newickToAuspiceJson(droppedFile.urlName, contents) : contents;
+      await droppedFile.readFile();
+      logs.push(`Read ${droppedFile.file.name} as a main dataset ${nwk?'Newick':'JSON'} file under name ${droppedFile.urlName}`);
     } catch (e) {
-      console.error(`${details.file.name} failed to be read as a main dataset ${nwk?'Newick':'JSON'} file. Error: ${e}`);
+      console.error(`${droppedFile.file.name} failed to be read as a main dataset ${nwk?'Newick':'JSON'} file. Error: ${e}`);
     }
   }
 
@@ -116,14 +91,14 @@ async function collectDatasets(dispatch, files) {
    * For every sidecar file link it to the associated `Dataset` object
    * (For this to work we must have first parsed all main JSON dataset files)
    */
-  for (const details of fileDetails.filter((d) => d.type===FILE_TYPES.SIDECAR)) {
-    const associatedDataset = datasets[details.urlName];
+  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.SIDECAR)) {
+    const associatedDataset = datasets[droppedFile.urlName];
     if (associatedDataset) {
-      associatedDataset[details.sidecarPropName] = readFile(details); // unresolved promise
-      logs.push(`Read ${details.file.name} as a sidecar file (dataset: ${details.urlName})`);
+      associatedDataset[droppedFile.sidecarPropName] = droppedFile.readFile(); // unresolved promise
+      logs.push(`Read ${droppedFile.file.name} as a sidecar file (dataset: ${droppedFile.urlName})`);
     } else {
       dispatch(errorNotification({
-        message: `Failed to load sidecar file ${details.file.name}.`,
+        message: `Failed to load sidecar file ${droppedFile.file.name}.`,
         details: "Does the file prefix match a corresponding dataset?"
       }));
     }
@@ -131,15 +106,15 @@ async function collectDatasets(dispatch, files) {
 
   /* finally, load any markdown files as a narrative (after all datasets have been created) */
   let narrative;
-  for (const details of fileDetails.filter((d) => d.type===FILE_TYPES.NARRATIVE)) {
-    logs.push(`Reading narrative file ${details.file.name}...`);
-    narrative = await parseNarrative(await readFile(details), datasets, logs);
+  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.NARRATIVE)) {
+    logs.push(`Reading narrative file ${droppedFile.file.name}...`);
+    narrative = await parseNarrative(await droppedFile.readFile(), datasets, logs);
     break; // don't consider multiple markdown files
   }
 
   /* Dispatch warnings for files which should be dragged onto the Auspice viz instead */
-  for (const details of fileDetails.filter((d) => d.type===FILE_TYPES.AUSPICE_DRAG_DROP)) {
-    logs.push(`${details.file.name} is a metadata file and should be dropped onto the tree not the splash page`);
+  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.AUSPICE_DRAG_DROP)) {
+    logs.push(`${droppedFile.file.name} is a metadata file and should be dropped onto the tree not the splash page`);
     dispatch(warningNotification({
       message: "Failed to parse additional metadata file!",
       details: "Please drop the metadata file after the tree has loaded."
@@ -147,8 +122,8 @@ async function collectDatasets(dispatch, files) {
   }
 
   /* are there any files we don't know what to do with? */
-  for (const details of fileDetails.filter((d) => d.type===undefined)) {
-    logs.push(`Unparsed file: ${details.file.name}`);
+  for (const droppedFile of droppedFiles.filter((d) => d.type===undefined)) {
+    logs.push(`Unparsed file: ${droppedFile.file.name}`);
   }
 
   console.log(logs.join("\n"))
@@ -258,7 +233,7 @@ async function parseNarrative(fileText, datasets, logs) {
   return slides;
 }
 
-function _fileDetails(file) {
+function makeDroppedFile(file) {
   const filename = file.name;
   const filenameLower = filename.toLowerCase();
   let filenameBase = filenameLower;
@@ -321,5 +296,29 @@ function _fileDetails(file) {
     type = FILE_TYPES.AUSPICE_DRAG_DROP;
   }
 
-  return {file, urlName, type, sidecarPropName, decompressCallback};
+  /** promisify FileReader's readAsText() so we can use it within
+  * async functions via `await readFile(file)`.
+  * Adapted from https://stackoverflow.com/a/51026615
+  */
+  function readFile() {
+    return new Promise((resolve, reject) => {
+      const fileReader = new window.FileReader();
+      fileReader.onloadend = async function(e) {
+        const text = decompressCallback ?
+          (await decompressCallback(file)) :
+          e.target.result;
+        if (type===FILE_TYPES.MAIN || type===FILE_TYPES.SIDECAR) {
+          resolve(JSON.parse(text));
+        } else {
+          resolve(text);
+        }
+      };
+      fileReader.onerror = function(e) {
+        reject(e);
+      };
+      fileReader.readAsText(file);
+    });
+  }
+
+  return {file, urlName, type, sidecarPropName, readFile};
 }
