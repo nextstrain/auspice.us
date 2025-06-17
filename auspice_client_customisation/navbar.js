@@ -20,7 +20,7 @@ const Title = styled.a`
   letter-spacing: 1rem;
 `;
 
-const AuspiceNavBar = ({narrativeTitle, sidebar}) => {
+const AuspiceNavBar = ({sidebar}) => {
   if (!sidebar) return null;
   return (
     <NavBarContainer>

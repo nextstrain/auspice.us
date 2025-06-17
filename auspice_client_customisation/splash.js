@@ -6,6 +6,7 @@ import pkg from "../package.json";
 
 const SplashContent = (props) => {
   React.useEffect(() => {
+    /* handle* functions should be dependencies of useEffect */
     document.addEventListener("dragover", handleDragover, false);
     document.addEventListener("drop", handleDrop, false);
 
@@ -14,16 +15,17 @@ const SplashContent = (props) => {
       document.removeEventListener("dragover", handleDragover, false);
       document.removeEventListener("drop", handleDrop, false);
     };
-  }, []);
 
-  function handleDragover(event) {
-    event.preventDefault();
-  }
+    function handleDrop(event) {
+      event.preventDefault();
+      handleDroppedFiles(props.dispatch, event.dataTransfer.files);
+    }
+    function handleDragover(event) {
+      event.preventDefault();
+    }
 
-  function handleDrop(event) {
-    event.preventDefault();
-    handleDroppedFiles(props.dispatch, event.dataTransfer.files);
-  }
+  }, [props.dispatch]);
+
 
   function handlePicked(event) {
     event.preventDefault();
@@ -67,12 +69,15 @@ const SplashContent = (props) => {
             <li>Auspice datasets (a main JSON plus any sidecars). See the
               <a href="https://nextstrain.org/docs/bioinformatics/introduction-to-augur"> Nextstrain docs </a>
               for how to run the bioinformatics tools to generate these datasets.
-              Note that it's possible to drag on multiple datasets, however at most two will be loaded, and it's not possible to control the ordering of these datasets! Each JSON file can be uncompressed (<Bold>.json</Bold>) or gzip-compressed (<Bold>.json.gz</Bold>)
+              {"Note that it's possible to drag on multiple datasets, however at most two will be loaded, and it's not possible to control the ordering of these datasets! "}
+              Each JSON file can be uncompressed (<Bold>.json</Bold>) or gzip-compressed (<Bold>.json.gz</Bold>)
             </li>
             <li>A nextstrain narrative ending in <Bold>.md</Bold> and associated datasets (JSONs) - see the
               <a href="https://docs.nextstrain.org/en/latest/tutorials/narratives-how-to-write.html"> Nextstrain docs </a>
               for how author a narrative. Each dataset the narrative references should have a filename which is the
-              <a href="https://en.wikipedia.org/wiki/URL"> URL path</a> but with forward slashes replaced with underscores ("/"→"_") and a <Bold>.json</Bold> suffix.
+              <a href="https://en.wikipedia.org/wiki/URL"> URL path</a>
+              {' but with forward slashes replaced with underscores ("/"→"_") and a '}
+              <Bold>.json</Bold> suffix.
               Only one narrative can be dropped on at a time!
             </li>
             <li>
