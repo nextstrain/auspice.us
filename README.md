@@ -34,6 +34,9 @@ curl http://data.nextstrain.org/zika.json --compressed -o data/zika.json;
 curl http://data.nextstrain.org/ncov_global.json --compressed -o data/ncov_global.json;
 ```
 
+## Development
+
+If changes are made to auspice.us beyond updating Auspice please update the changelog and version (in `package.json`) in the PR itself; as soon as the PR is merged the deployment process will begin.
 
 ## Deploy
 
