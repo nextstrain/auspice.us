@@ -28,7 +28,7 @@ export const handleDroppedFiles = async (dispatch, files) => {
 
 
 /* CONSTANTS */
-const JSON_SUFFIXES = [".json"];
+const JSON_SUFFIXES = [".json", ".auspicejson"];
 const NARRATIVE_SUFFIXES = [".md"];
 const SIDECAR_SUFFIXES = { // suffix -> property (on `Dataset` object)
   "_tip-frequencies":  "tipFrequencies",
