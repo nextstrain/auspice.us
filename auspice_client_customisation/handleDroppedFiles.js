@@ -38,6 +38,7 @@ const SIDECAR_SUFFIXES = { // suffix -> property (on `Dataset` object)
 const NEWICK_SUFFIXES = ["new", "nwk", "newick"];
 const COMPRESSIONS = {
   ".gz": async (file) => decompressGzipStream(file.stream()),
+  ".gzip": async (file) => decompressGzipStream(file.stream()),
 };
 const FILE_TYPES = {
   MAIN: 'MAIN',
