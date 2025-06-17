@@ -102,6 +102,9 @@ export default defineConfig([globalIgnores(["dist/*", "node_modules/*"]), {
         }],
 
         "quote-props": ["error", "as-needed"],
+
+        /* allow require() to avoid overhauling how imports are currently set up */
+        "@typescript-eslint/no-require-imports": "off"
     },
 }, {
     files: ["**/*.ts", "**/*.tsx"],

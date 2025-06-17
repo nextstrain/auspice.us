@@ -6,11 +6,10 @@
 
 const fs = require('fs');
 const path = require("path");
-const { match } = require('assert');
 
-let viewSrc = fs.readFileSync(path.join(__dirname, "../node_modules/auspice/cli/view.js"), encoding="utf8");
+let viewSrc = fs.readFileSync(path.join(__dirname, "../node_modules/auspice/cli/view.js"), {encoding: "utf8"});
 viewSrc = redirectHttpToHttps(viewSrc)
-fs.writeFileSync(path.join(__dirname, "../node_modules/auspice/cli/view.js"), viewSrc, encoding='utf8')
+fs.writeFileSync(path.join(__dirname, "../node_modules/auspice/cli/view.js"), viewSrc, {encoding: 'utf8'})
 
 /* ----------------------------------------------------------------------------------------- */
 

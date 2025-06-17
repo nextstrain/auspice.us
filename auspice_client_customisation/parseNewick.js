@@ -49,13 +49,14 @@ export const parseNewick = (nwk) => {
         break;
       case ':': // optional length next
         break;
-      default:
+      default: {
         const x = tokens[i-1];
         if (x === ')' || x === '(' || x === ',') {
           tree.name = token;
         } else if (x === ':') {
           tree.node_attrs = {div: parseFloat(token)};
         }
+      }
     }
   }
   return tree;
@@ -67,7 +68,7 @@ const getTreeStruct = (nwk) => {
 
   /* recursively create missing node names */
   let count = 10000,allBranchLengthsAreZero=true;
-  let NodeNamesDictForDeduplicating = {};
+  const NodeNamesDictForDeduplicating = {};
   const addNodeName = (node) => {
 	if (! ("node_attrs" in node)) node.node_attrs= {};
     if (! ("div" in node.node_attrs)) node.node_attrs.div= 0;

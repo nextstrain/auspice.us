@@ -51,8 +51,8 @@ function readFile(file) {
  * Adapted from https://stackoverflow.com/a/68829631
  */
 async function decompressGzipStream(stream) {
-  let ds = new DecompressionStream("gzip");
-  let decompressedStream = stream.pipeThrough(ds);
+  const ds = new DecompressionStream("gzip");
+  const decompressedStream = stream.pipeThrough(ds);
   return await new Response(decompressedStream).text();
 }
 
@@ -96,8 +96,8 @@ async function collectDatasets(dispatch, files) {
   const jsonFileTypes = [".json", ".json.gz"];
   const newickFileTypes = ["new", "nwk", "newick"];
   const isMain = (f) => (
-    jsonFileTypes.some(ext => f.name.toLowerCase().endsWith(ext)) &&
-    Object.keys(sidecarMappings).every((suffix) => !jsonFileTypes.some(ext => f.name.toLowerCase().endsWith(`_${suffix}${ext}`)))
+    jsonFileTypes.some((ext) => f.name.toLowerCase().endsWith(ext)) &&
+    Object.keys(sidecarMappings).every((suffix) => !jsonFileTypes.some((ext) => f.name.toLowerCase().endsWith(`_${suffix}${ext}`)))
   );
   const filesSeen = new Set(); // lowercase names of files we have read (successfully or otherwise)
   const logs = [];
@@ -143,7 +143,7 @@ async function collectDatasets(dispatch, files) {
     const nameLower = file.name.toLowerCase();
     if (filesSeen.has(nameLower)) continue;
 
-    if (!jsonFileTypes.some(ext => nameLower.endsWith(ext)) && !nameLower.endsWith(".md")) {
+    if (!jsonFileTypes.some((ext) => nameLower.endsWith(ext)) && !nameLower.endsWith(".md")) {
       dispatch(errorNotification({
         message: `Failed to load ${file.name}.`,
         details: "Please refer to the homepage for supported files, and check that your file is named properly."
@@ -152,7 +152,7 @@ async function collectDatasets(dispatch, files) {
     }
 
     for (const [sidecarSuffix, sidecarPropName] of Object.entries(sidecarMappings)) {
-      if (jsonFileTypes.some(ext => nameLower.endsWith(`_${sidecarSuffix}${ext}`))) { // filename looks like a sidecar file?
+      if (jsonFileTypes.some((ext) => nameLower.endsWith(`_${sidecarSuffix}${ext}`))) { // filename looks like a sidecar file?
         filesSeen.add(nameLower);
         const datasetName = getDatasetName(nameLower, sidecarSuffix);
         if (datasets[datasetName]) {
