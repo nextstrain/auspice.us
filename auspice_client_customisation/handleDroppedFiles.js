@@ -4,13 +4,14 @@ import { Dataset, addEndOfNarrativeBlock, getDatasetNamesFromUrl } from "@auspic
 import { parseMarkdownNarrativeFile } from "@auspice/util/parseNarrative";
 import { parseMarkdown } from "@auspice/util/parseMarkdown";
 import { isAcceptedFileType as isAuspiceAcceptedFileType } from "@auspice/actions/filesDropped/constants";
+import { handleFilesDropped } from "@auspice/actions/filesDropped/filesDropped";
 import newickToAuspiceJson from "./parseNewick";
 
 /* The following requires knowledge of how auspice works, is undocumented, and is liable to change since auspice
 doesn't officially expose these functions */
 
 export const handleDroppedFiles = async (dispatch, files) => {
-  const {datasets, narrative} = await collectDatasets(dispatch, files);
+  const {datasets, narrative, dragDropMetadataFiles} = await collectDatasets(dispatch, files);
   if (Object.values(datasets).length===0) {
     return narrative ?
       dispatch(errorNotification({
@@ -22,7 +23,12 @@ export const handleDroppedFiles = async (dispatch, files) => {
         details: `Please consider making a GitHub issue for this to help us improve auspice.us. See the browser console for more details.`
       }));
   }
-  await loadDatasets(dispatch, datasets, narrative);
+  await loadDatasets(dispatch, datasets, narrative);  
+  
+  if (dragDropMetadataFiles.length) {
+    dispatch(handleFilesDropped(dragDropMetadataFiles.map((file) => file.file)))
+  }
+  
   return;
 };
 
@@ -77,6 +83,12 @@ async function collectDatasets(dispatch, files) {
     const nwk = droppedFile.type===FILE_TYPES.NEWICK;
     try {
       const contents = await droppedFile.readFile();
+      // If a JSON, check for tree/meta top level keys (which are essential). It they're not there it may be a
+      // node-data JSON which Auspice can handle
+      if (droppedFile.type === FILE_TYPES.MAIN && !(Object.hasOwn(contents, 'meta') && Object.hasOwn(contents, 'tree'))) {
+        droppedFile.type = FILE_TYPES.AUSPICE_DRAG_DROP;
+        continue;
+      }
       datasets[droppedFile.urlName] = new Dataset(droppedFile.urlName);
       datasets[droppedFile.urlName].apiCalls = {}; // ensures no prototypes mistakenly make api calls
       datasets[droppedFile.urlName].main = nwk ? newickToAuspiceJson(droppedFile.urlName, contents) : contents;
@@ -111,23 +123,21 @@ async function collectDatasets(dispatch, files) {
     narrative = await parseNarrative(await droppedFile.readFile(), datasets, logs);
     break; // don't consider multiple markdown files
   }
+  
+  const dragDropMetadataFiles = droppedFiles.filter((d) => d.type === FILE_TYPES.AUSPICE_DRAG_DROP);
 
-  /* Dispatch warnings for files which should be dragged onto the Auspice viz instead */
-  for (const droppedFile of droppedFiles.filter((d) => d.type===FILE_TYPES.AUSPICE_DRAG_DROP)) {
-    logs.push(`${droppedFile.file.name} is a metadata file and should be dropped onto the tree not the splash page`);
+  /* are there any files we don't know what to do with? */
+  const unparsedFilenames = droppedFiles.filter((d) => d.type === undefined).map((d) => d.file.name);
+  if (unparsedFilenames.length) {
+    unparsedFilenames.forEach((name) => logs.push(`Unparsed file: ${name}`));
     dispatch(warningNotification({
-      message: "Failed to parse additional metadata file!",
-      details: "Please drop the metadata file after the tree has loaded."
+      message: "Some file types couldn't be handled",
+      details: unparsedFilenames.join(", ")
     }));
   }
 
-  /* are there any files we don't know what to do with? */
-  for (const droppedFile of droppedFiles.filter((d) => d.type===undefined)) {
-    logs.push(`Unparsed file: ${droppedFile.file.name}`);
-  }
-
   console.log(logs.join("\n"))
-  return {datasets, narrative};
+  return {datasets, narrative, dragDropMetadataFiles};
 }
 
 /**
@@ -291,7 +301,10 @@ function makeDroppedFile(file) {
   /* convert the basename (if there is one!) to nextstrain-like URL display */
   const urlName = filenameBase ? filenameBase.replaceAll("_", "/") : undefined;
 
-  /* Finally, check if the file is handle-able by Auspice itself */
+  /* Finally, check if the file is handle-able by Auspice itself
+   * Note that JSONs are handled as drag-and-drop files in Auspice, but they'll be
+   * assigned a `type` above so we don't pass them through
+   */
   if (!type && isAuspiceAcceptedFileType(file)) {
     type = FILE_TYPES.AUSPICE_DRAG_DROP;
   }

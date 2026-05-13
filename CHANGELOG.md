@@ -3,6 +3,10 @@
 > Note that updates to the version of Auspice used do not generally result in updates to the auspice.us version.
 > In the [auspice.us](https://auspice.us) splash-page footer you can see both the auspice.us and Auspice versions in use.
 
+### Version 0.14.0 (2026-05)
+
+* Additional metadata and node-data JSON files can now be dragged on (together with dataset JSON(s)), and Auspice will handle them once the dataset has loaded.
+
 ### Version 0.13.0 (2025-06-18)
 
 > Note: We went three years without updating the auspice.us version! These are the changes between the 0.12.0 release and the 0.13.0 release:
