@@ -85,8 +85,8 @@ const SplashContent = (props) => {
               <a href="https://en.wikipedia.org/wiki/Newick_format"> Newick format</a> with name ending in <Bold>.new</Bold>, <Bold>.nwk</Bold>, or <Bold>.newick</Bold>.
             </li>
             <li>
-              Additional metadata as a CSV/TSV (drop this on once the tree has loaded).
-              <a href="https://nextstrain.github.io/auspice/advanced-functionality/drag-drop-csv-tsv"> See here for details.</a>
+              Additional metadata file(s) in any of the
+              <a href="https://nextstrain.github.io/auspice/advanced-functionality/drag-drop-csv-tsv"> supported drag-and-drop file formats.</a>
             </li>
           </ul>
         </P>
