@@ -27,6 +27,10 @@ export const P = styled.div`
       padding-bottom: 10px;
     }
   }
+
+  li {
+    text-align: start;
+  }
 `;
 
 export const Bold = styled.span`
@@ -81,4 +85,3 @@ export const GitHub = () => (
     <span style={{fontWeight: 400, fontSize: "16px"}}>{" /nextstrain/auspice.us"}</span>
   </a>
 );
-
