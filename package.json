@@ -4,7 +4,7 @@
   "author": "James Hadfield",
   "license": "AGPL-3.0-only",
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
     "lint": "eslint --max-warnings=0 .",
