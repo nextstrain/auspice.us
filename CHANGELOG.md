@@ -3,6 +3,11 @@
 > Note that updates to the version of Auspice used do not generally result in updates to the auspice.us version.
 > In the [auspice.us](https://auspice.us) splash-page footer you can see both the auspice.us and Auspice versions in use.
 
+### Version 0.15.0 (2026-07)
+
+* Enable dataset editor that was added in [Auspice v2.73.0](https://github.com/nextstrain/auspice/releases/tag/v2.73.0)
+  ([PR 159](https://github.com/nextstrain/auspice.us/pull/159)).
+
 ### Version 0.14.0 (2026-05)
 
 * Additional metadata and node-data JSON files can now be dragged on (together with dataset JSON(s)), and Auspice will handle them once the dataset has loaded.
