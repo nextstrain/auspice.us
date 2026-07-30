@@ -43,7 +43,7 @@ const SplashContent = (props) => {
           </Bold>
         </P>
         <P>
-          This page can be re-opened without an internet connection on modern web browsers.
+          This page can be re-opened without an internet connection on modern web browsers. <a href="https://nextstrain.org/blog/2026-07-09-auspice-updates">More info</a>
         </P>
         <P>
           <Bold>Privacy: </Bold>
