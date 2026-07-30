@@ -43,6 +43,9 @@ const SplashContent = (props) => {
           </Bold>
         </P>
         <P>
+          This page can be re-opened without an internet connection on modern web browsers.
+        </P>
+        <P>
           <Bold>Privacy: </Bold>
           {`Your dataset is visualised client-side in the browser -- no data is transmitted, and no tracking cookies are used.
           The only data downloaded from the internet is the visualisation (JavaScript) code, fonts and any map tiles needed.
