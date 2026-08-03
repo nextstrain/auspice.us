@@ -43,6 +43,9 @@ const SplashContent = (props) => {
           </Bold>
         </P>
         <P>
+          This page can be re-opened without an internet connection on modern web browsers. <a href="https://nextstrain.org/blog/2026-07-09-auspice-updates">More info</a>
+        </P>
+        <P>
           <Bold>Privacy: </Bold>
           {`Your dataset is visualised client-side in the browser -- no data is transmitted, and no tracking cookies are used.
           The only data downloaded from the internet is the visualisation (JavaScript) code, fonts and any map tiles needed.
