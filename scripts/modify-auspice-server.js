@@ -4,12 +4,12 @@
  * development of auspice such that this script becomes unnecessary!
  */
 
-const fs = require('fs');
-const path = require("path");
+import fs from "fs";
+import path from "path";
 
-let viewSrc = fs.readFileSync(path.join(__dirname, "../node_modules/auspice/cli/view.js"), {encoding: "utf8"});
+let viewSrc = fs.readFileSync(path.join(import.meta.dirname, "../node_modules/auspice/cli-build/view.js"), {encoding: "utf8"});
 viewSrc = redirectHttpToHttps(viewSrc)
-fs.writeFileSync(path.join(__dirname, "../node_modules/auspice/cli/view.js"), viewSrc, {encoding: 'utf8'})
+fs.writeFileSync(path.join(import.meta.dirname, "../node_modules/auspice/cli-build/view.js"), viewSrc, {encoding: 'utf8'})
 
 /* ----------------------------------------------------------------------------------------- */
 
@@ -23,9 +23,9 @@ fs.writeFileSync(path.join(__dirname, "../node_modules/auspice/cli/view.js"), vi
 function redirectHttpToHttps(contents) {
   console.log("Modifying the auspice server (view.js) to redirect http -> https on heroku");
   const useCompression = "app.use(compression());";
-  const fsImport = 'const fs = require("fs");';
+  const fsImport = 'import fs from "fs";';
   if (contents.includes(useCompression) && contents.includes(fsImport)) {
-    contents = contents.replace(fsImport, "const sslRedirect = require('heroku-ssl-redirect');" + "\n" + fsImport);
+    contents = contents.replace(fsImport, "import sslRedirect from 'heroku-ssl-redirect';" + "\n" + fsImport);
     contents = contents.replace(useCompression, "app.use(sslRedirect());" + "\n  " + useCompression);
   } else {
     console.log("WARNING -- redirect HTTP -> HTTPS failed. Has the view.js contents changed?");
