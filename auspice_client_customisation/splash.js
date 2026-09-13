@@ -2,6 +2,7 @@ import React from "react";
 import { handleDroppedFiles } from "./handleDroppedFiles";
 import { P, Bold, Title, UploadBox, UploadButton, CenterContent, Line, NextstrainTitle, GitHub } from './styles';
 import pkg from "../package.json";
+import { version as auspiceVersion } from "@auspice/version";
 
 
 const SplashContent = (props) => {
@@ -111,7 +112,7 @@ const SplashContent = (props) => {
         <Line/>
 
         <P>
-          {`auspice.us ${pkg.version} (Auspice ${pkg.dependencies.auspice})`}
+          {`auspice.us ${pkg.version} (Auspice ${auspiceVersion})`}
         </P>
         <NextstrainTitle/>
         <GitHub/>
